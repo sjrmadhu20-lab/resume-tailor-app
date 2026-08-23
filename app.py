@@ -388,19 +388,3 @@ if generate_btn:
                     st.write("**Header Line:**", tailored_data.get("header_title"))
                     st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
                     st.write("**Target Category Bullet:**", tailored_data.get("conektr_category_bullet"))
-```[cite: 10]
-
----
-
-### Step-by-Step Instructions
-
-1. Hover over the top right corner of the black code block above and click the **Copy** icon.
-2. Open your GitHub repository in your browser:  
-   `[https://github.com/sjrmadhu20-lab/resume-tailor-app](https://github.com/sjrmadhu20-lab/resume-tailor-app)`
-3. Click on the file named **`app.py`**.
-4. Click the **Pencil icon** (top right) to enter edit mode.
-5. Highlight all existing text inside that file (`Ctrl+A` on Windows or `Cmd+A` on Mac) and press **Delete** or **Backspace**.
-6. Paste the copied code (`Ctrl+V` or `Cmd+V`).
-7. Click the green **Commit changes...** button at the top right.
-
-Streamlit will refresh automatically within a few seconds.
