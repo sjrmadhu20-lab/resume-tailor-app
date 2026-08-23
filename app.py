@@ -14,7 +14,12 @@ from google.genai import types
 st.set_page_config(page_title="Executive ATS Resume Tailor", page_icon="🎯", layout="wide")
 
 # ==============================================================================
-# 1. KNOWLEDGE ARCHIVE & MASTER DATA DEFINITIONS
+# 1. RETRIEVE SAVED GEMINI API KEY FROM STREAMLIT SECRETS
+# ==============================================================================
+api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
+
+# ==============================================================================
+# 2. KNOWLEDGE ARCHIVE & MASTER DATA DEFINITIONS
 # ==============================================================================
 MASTER_STATIC = {
     "name": "MADHUSUDHANAN JANAKARAJAN (MADHU)",
@@ -49,12 +54,12 @@ MASTER_STATIC = {
 }
 
 # ==============================================================================
-# 2. WORD DOCUMENT GENERATION ENGINE (STRICT 2-PAGE 3-COLUMN MASTER TEMPLATE)
+# 3. WORD DOCUMENT GENERATION ENGINE (STRICT 2-PAGE 3-COLUMN MASTER TEMPLATE)
 # ==============================================================================
 def create_master_resume_docx(tailored_data):
     doc = Document()
     
-    # Strict Page Setup (0.5 in margins to ensure clean 2-page fit)
+    # Strict Page Setup (0.4-0.45 in margins to lock 2-page boundary)
     for section in doc.sections:
         section.top_margin = Inches(0.4)
         section.bottom_margin = Inches(0.4)
@@ -162,7 +167,6 @@ def create_master_resume_docx(tailored_data):
         p.runs[0].bold = True
         p.runs[0].font.size = Pt(8.5)
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        # Set light grey shading on header cells
         tcPr = hdr_cells[i]._tc.get_or_add_tcPr()
         tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="E9ECEF"/>'))
 
@@ -170,7 +174,6 @@ def create_master_resume_docx(tailored_data):
     for i, col in enumerate(table.columns):
         row_cells[i].width = col_widths[i]
 
-    # Helper for cell content
     def add_cell_block(cell, bold_title, sub_title, bullets):
         p_title = cell.add_paragraph()
         p_title.paragraph_format.space_before = Pt(4)
@@ -237,7 +240,7 @@ def create_master_resume_docx(tailored_data):
     add_cell_block(row_cells[2], "TransCPG Inc. & FieldAssist | 2025 – Present", "Post Exit – Transformation Advisor (Director)", c3_bullets_trans)
     add_cell_block(row_cells[2], "Ivy Mobility Pte Ltd | 2011 – 2016", "Business Head – MEA", c3_bullets_ivy)
 
-    # Clean borders XML helper on table
+    # Clean borders
     tblPr = table._tbl.tblPr
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -273,18 +276,22 @@ def create_master_resume_docx(tailored_data):
     return doc_io
 
 # ==============================================================================
-# 3. STREAMLIT FRONTEND & LLM INTEGRATION
+# 4. STREAMLIT FRONTEND
 # ==============================================================================
 st.title("🎯 Executive ATS Resume Tailoring Engine")
 st.caption("Locked Master Resume Architecture • Real-Time AI Keyword & Capability Weaving • Strict 2-Page Constraint")
 
-# Sidebar for API Key (Secure & Easy)
+# Clean Sidebar: Shows Active Status Automatically
 with st.sidebar:
-    st.header("🔑 AI Engine Configuration")
-    api_key = st.text_input("Gemini API Key:", type="password", help="Get free key at aistudio.google.com")
+    st.header("⚡ System Status")
+    if api_key:
+        st.success("🟢 Gemini AI Engine: Active")
+    else:
+        st.warning("🟠 AI Engine: Inactive (Set GEMINI_API_KEY in Secrets)")
+    
     st.markdown("---")
-    st.write("📂 **Local Knowledge Archive Sync:**")
-    st.caption("Active Master: `Master resume.docx`\nActive Archive: `Additional Achievements.docx`\nRules: `Instructions for Tool and AI Knowledge.docx`")
+    st.write("📂 **Active Knowledge Base:**")
+    st.caption("• Master Resume (Locked Template)\n• Additional Achievements Archive\n• Tailoring Rules Engine")
 
 col1, col2 = st.columns([1.1, 0.9])
 
@@ -304,7 +311,6 @@ if generate_btn:
             st.subheader("2. AI Analysis & Tailored File")
             with st.spinner("Synthesizing JD & Special Instructions with Master Profile..."):
                 
-                # Check for Gemini API Key or fallback to smart heuristic engine
                 if api_key:
                     try:
                         client = genai.Client(api_key=api_key)
@@ -355,7 +361,6 @@ if generate_btn:
                             "conektr_category_bullet": "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Unilever, P&G, L'Oréal, and Colgate-Palmolive."
                         }
                 else:
-                    # Fallback when testing without API Key
                     tailored_data = {
                         "header_title": "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | Hub Strategy",
                         "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership, digital distribution entrepreneurship (Conektr), and enterprise SaaS transformations (FieldAssist & Ivy Mobility) for 10+ tier-1 CPG enterprises.",
@@ -383,3 +388,19 @@ if generate_btn:
                     st.write("**Header Line:**", tailored_data.get("header_title"))
                     st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
                     st.write("**Target Category Bullet:**", tailored_data.get("conektr_category_bullet"))
+```[cite: 10]
+
+---
+
+### Step-by-Step Instructions
+
+1. Hover over the top right corner of the black code block above and click the **Copy** icon.
+2. Open your GitHub repository in your browser:  
+   `[https://github.com/sjrmadhu20-lab/resume-tailor-app](https://github.com/sjrmadhu20-lab/resume-tailor-app)`
+3. Click on the file named **`app.py`**.
+4. Click the **Pencil icon** (top right) to enter edit mode.
+5. Highlight all existing text inside that file (`Ctrl+A` on Windows or `Cmd+A` on Mac) and press **Delete** or **Backspace**.
+6. Paste the copied code (`Ctrl+V` or `Cmd+V`).
+7. Click the green **Commit changes...** button at the top right.
+
+Streamlit will refresh automatically within a few seconds.
