@@ -1,275 +1,385 @@
 import streamlit as st
 import json
 import io
+import os
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import parse_xml
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml import parse_xml, OxmlElement
+from docx.oxml.ns import nsdecls, qn
+from google import genai
+from google.genai import types
 
-st.set_page_config(page_title="Executive Resume Tailor", page_icon="📄", layout="wide")
+st.set_page_config(page_title="Executive ATS Resume Tailor", page_icon="🎯", layout="wide")
 
-# ==========================================
-# 1. MASTER PROFILE DATABASE (FULL CAREER HISTORY)
-# ==========================================
-MASTER_PROFILE = {
+# ==============================================================================
+# 1. KNOWLEDGE ARCHIVE & MASTER DATA DEFINITIONS
+# ==============================================================================
+MASTER_STATIC = {
     "name": "MADHUSUDHANAN JANAKARAJAN (MADHU)",
     "contact": {
         "location": "Dubai, UAE",
         "phone": "+971 50 654 7858",
         "email": "sjrmadhu20@gmail.com",
-        "linkedin": "https://www.linkedin.com/in/madhusi/",
+        "linkedin": "https://www.linkedin.com/in/madhusj/",
         "portfolio": "https://linktr.ee/M_S_J",
         "visas": "UAE Golden Visa | USA O-1A (Extraordinary Ability)"
     },
-    "education": [
-        {"degree": "MBA (2006)", "institution": "Adam Smith University, USA [Airtel Sponsored Program]"},
-        {"degree": "Bachelor of Engineering (2001)", "institution": "Government College of Engineering (GEC), India"}
-    ],
     "honors": [
-        "UAE Golden Visa – Recognized for national-scale entrepreneurship & digital commerce impact.",
-        "USA O-1A Visa – Extraordinary Ability classification in FMCG & Digital Commerce.",
-        "$15M+ VC Funding & Strategic M&A Exit – Successfully exited Conektr to Al Maya Group ($1B+ conglomerate).",
-        "Industry Recognition – Featured in Bloomberg, Gulf News, Khaleej Times, Yahoo Finance, Magnitt."
+        "UAE Golden Visa – Recognized for national-scale entrepreneurship and digital commerce impact.",
+        "USA O-1A Visa – Extraordinary Ability in FMCG and Digital Commerce.",
+        "$15M+ VC funding & exit – Raised $15M+ and successfully exited Conektr to Al Maya Group.",
+        "Featured in Gulf News, Bloomberg, Khaleej Times, Yahoo Finance, Magnitt, among others - https://linktr.ee/M_S_J"
     ],
-    "languages": "English | Hindi | Tamil | Kannada | Telugu | Effective engagement with Arabic-speaking stakeholders.",
+    "education": [
+        {"degree": "MBA (2006)", "details": "Adam smith University, USA. [Remote, Airtel Sponsored program for top employees]"},
+        {"degree": "Bachelor of Engineering (2001)", "details": "Government College of Engineering (GEC), Tier 1 DOTE College, India"}
+    ],
+    "languages": "English | Hindi | Tamil | Kannada | Telugu | effective engagement with Arabic-speaking stakeholders.",
+    "interests": "Chess Player | Table Tennis Enthusiast | Regular 10K Runner",
     "tech_stack": {
         "AI, Automation & Conversational Commerce": "Agentic Voice Bots (Vapi, ElevenLabs) | Conversational Commerce (Wati, Twilio, Infobip) | Workflow Automation (Make.com) | CRM & Marketing Automation (Klaviyo)",
-        "Enterprise & Sales Systems": "SAP (Sales & Distribution) | Oracle eCRM | Microsoft Dynamics 365 | SFA / DMS Enterprise Platforms | ERP-CRM Integration",
-        "Digital Commerce & Product Delivery": "WooCommerce | Magento | Mobile Apps (iOS, Android, Flutter) | Full SDLC Ownership (Figma -> Launch)",
-        "Data, Analytics & Optimization": "Power BI | Python Scripting | Sales & Trade Analytics | Demand Forecasting | Route & Beat Optimization",
-        "Fintech & Payments": "Stripe | PayPal | CCAvenue | Triterras | Tabby | Spotii (Credit, Payments & Trade Finance Integrations)"
+        "Enterprise & Sales Systems": "SAP (Sales & Distribution) | Oracle eCRM | Microsoft Dynamics | SFA / DMS platforms | ERP–CRMs API - integrations",
+        "Digital Commerce & Product Delivery": "WooCommerce | Magento | Mobile Apps (iOS, Android, Flutter) | Full SDLC ownership (Figma → Development → Launch)",
+        "Data, Analytics & Optimization": "Power BI | Python scripting | Sales & trade analytics | Demand forecasting | Route & beat optimization",
+        "Fintech & Payments": "Stripe | PayPal | CCAvenue | Triterras | Tabby | Spotii (credit, payments, and trade finance integrations)"
     },
-    "roles": [
-        {
-            "role_title": "Chief Executive Officer & Founder",
-            "company": "Conektr Tech Global Ltd (Digital FMCG Principal / Distributor)",
-            "location": "UAE & India",
-            "dates": "May 2016 – Aug 2024 (Acquisition Exit to Al Maya Group)",
-            "base_bullets": [
-                "Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands with complete P&L, warehousing, and logistics oversight.",
-                "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Colgate-Palmolive, Unilever (Dove, Sunsilk, Vaseline), P&G (Pantene, Olay), and L'Oréal.",
-                "Built proprietary app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.",
-                "Cut coverage cost by >50% and elevated field execution productivity by ~200% vs. traditional trade models.",
-                "Deployed Dynamics 365 + Power BI and AI route optimization, reducing overall logistics/admin costs by ~40%.",
-                "Raised ~$15M from DIFC VC and C-suite FMCG leaders (ex-Mondelēz President, BAT CFO); executed successful strategic M&A exit to Al Maya Group."
-            ]
-        },
-        {
-            "role_title": "Strategic Advisor (Director) & Board Member",
-            "company": "TransCPG Inc. & FieldAssist",
-            "location": "Dubai, UAE",
-            "dates": "2025 – Present",
-            "base_bullets": [
-                "Advise global FMCG principals and enterprise distributors on modernizing SAP/Oracle SFA/DMS RTM integrations, driving ~150% coverage growth.",
-                "Built Bid2Bill AI/Voice-bot & WhatsApp B2B ordering platform, slashing Customer Acquisition Cost (CAC) by ~40% with 4x engagement uplift.",
-                "Formulate scalable omnichannel go-to-market roadmaps, digital shelf compliance benchmarks, and commercial capability programs across multi-country hubs."
-            ]
-        },
-        {
-            "role_title": "Business Head – MEA",
-            "company": "Ivy Mobility Pte Ltd",
-            "location": "Dubai, UAE",
-            "dates": "2011 – 2016",
-            "base_bullets": [
-                "Built MEA commercial setup from scratch into Ivy's 2nd largest global business unit ($10M+ pipeline across 10+ countries).",
-                "Won and governed 22 enterprise CPG logos: P&G, Nestlé, Haleon/GSK, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.",
-                "Personally directed on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.",
-                "Deployed Cloud SaaS SFA/DMS to 2,000+ commercial sales users, ensuring high post-implementation adoption and maximized trade ROI."
-            ]
-        },
-        {
-            "role_title": "Regional Sales Head (GCC) & Sales Capability Head (India)",
-            "company": "Britannia Industries Ltd",
-            "location": "Dubai, UAE & India",
-            "dates": "2007 – 2011",
-            "base_bullets": [
-                "Owned $100M+ P&L across 6 GCC markets (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.",
-                "Directed 250+ distributor networks and 600+ frontline sales staff across GT, MT, Wholesale, and Institutional channels.",
-                "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.",
-                "Delivered ~30% numeric distribution growth, increased Lines Per Call (LPC) to ~120%, and reduced sales administrative overhead by ~30%.",
-                "Awarded Best Employee Award by Group MD for achieving record monthly sales for 3 consecutive turnaround months in GCC."
-            ]
-        },
-        {
-            "role_title": "Commercial & Capability Roles",
-            "company": "Bharti Airtel | Reliance Infocomm | Tyco",
-            "location": "India",
-            "dates": "2001 – 2007",
-            "base_bullets": [
-                "Built foundations in frontline trade execution, journey beat planning, and merchandiser capability development.",
-                "Deployed enterprise SPIN selling training and integrated Oracle eCRM and LMS infrastructure at scale."
-            ]
-        }
-    ]
+    "why_hire_me": "A rare profile combining Core FMCG Operator + Digital FMCG Disruption pioneer + Enterprise Transformations (P&G, Coca-cola, GSK) + 10+ International Markets (GCC, India, Africa, Asia) + Successful Entrepreneurial $15M M&A Exit + Recipient of Global recognition for FMCG Contribution: O1A from USA & Golden Visa from UAE - as an extraordinary ability leader."
 }
 
-st.title("🎯 Executive ATS Resume Tailor")
-st.caption("Injects targeted keywords and job alignments directly into your comprehensive career profile.")
-
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.subheader("1. Enter Target Role & JD")
-    custom_role = st.text_input("Target Position Title:", "Digital Commerce Strategy Manager – METCA Hub")
-    job_desc = st.text_area("Paste Target Job Description (JD):", height=250)
-    generate_btn = st.button("🚀 Generate Tailored Master Resume", type="primary")
-
-def create_master_docx(target_title, summary, skills_list):
+# ==============================================================================
+# 2. WORD DOCUMENT GENERATION ENGINE (STRICT 2-PAGE 3-COLUMN MASTER TEMPLATE)
+# ==============================================================================
+def create_master_resume_docx(tailored_data):
     doc = Document()
-    for s in doc.sections:
-        s.top_margin = Inches(0.65)
-        s.bottom_margin = Inches(0.65)
-        s.left_margin = Inches(0.65)
-        s.right_margin = Inches(0.65)
+    
+    # Strict Page Setup (0.5 in margins to ensure clean 2-page fit)
+    for section in doc.sections:
+        section.top_margin = Inches(0.4)
+        section.bottom_margin = Inches(0.4)
+        section.left_margin = Inches(0.45)
+        section.right_margin = Inches(0.45)
 
     style = doc.styles['Normal']
     style.font.name = 'Calibri'
-    style.font.size = Pt(10)
-    style.font.color.rgb = RGBColor(0x22, 0x22, 0x22)
+    style.font.size = Pt(8.5)
+    style.font.color.rgb = RGBColor(0x1F, 0x24, 0x21)
 
-    # Header
-    hp = doc.add_paragraph()
-    hp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_name = hp.add_run(MASTER_PROFILE['name'] + "\n")
-    r_name.bold = True
-    r_name.font.size = Pt(15)
-    r_name.font.color.rgb = RGBColor(0x0B, 0x25, 0x45)
-
-    r_t = hp.add_run(target_title + "\n")
-    r_t.bold = True
-    r_t.font.size = Pt(11)
-    r_t.font.color.rgb = RGBColor(0x13, 0x40, 0x74)
-
-    c = MASTER_PROFILE['contact']
-    r_c = hp.add_run(f"{c['location']} | {c['phone']} | {c['email']}\n{c['linkedin']} | Portfolio: {c['portfolio']}\nVisa Status: {c['visas']}")
-    r_c.font.size = Pt(8.5)
-
-    def add_section_header(title):
+    def format_heading(title):
         p = doc.add_paragraph()
-        p.paragraph_format.space_before = Pt(10)
-        p.paragraph_format.space_after = Pt(3)
-        run = p.add_run(title.upper())
-        run.bold = True
-        run.font.size = Pt(10)
-        run.font.color.rgb = RGBColor(0x0B, 0x25, 0x45)
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_after = Pt(2)
+        r = p.add_run(title.upper())
+        r.bold = True
+        r.font.size = Pt(9.5)
+        r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
         pPr = p._p.get_or_add_pPr()
         pBdr = parse_xml(r'<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-                         r'<w:bottom w:val="single" w:sz="6" w:space="2" w:color="0B2545"/>'
+                         r'<w:bottom w:val="single" w:sz="6" w:space="1" w:color="000000"/>'
                          r'</w:pBdr>')
         pPr.append(pBdr)
 
-    # 1. Executive Summary
-    add_section_header("Executive Summary")
-    doc.add_paragraph(summary)
+    # 1. Header Section
+    hp = doc.add_paragraph()
+    hp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    hp.paragraph_format.space_after = Pt(1)
+    
+    r_name = hp.add_run(MASTER_STATIC['name'] + "\n")
+    r_name.bold = True
+    r_name.font.size = Pt(13)
+    
+    # Variable Header Line (Strictly 1 Line)
+    r_title = hp.add_run(tailored_data.get("header_title", "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader") + "\n")
+    r_title.bold = True
+    r_title.font.size = Pt(9.5)
+    
+    c = MASTER_STATIC['contact']
+    r_contact = hp.add_run(f"{c['location']} | {c['phone']} | {c['email']}\n{c['linkedin']} | Portfolio: {c['portfolio']}\nVisa Status: {c['visas']}")
+    r_contact.font.size = Pt(8)
 
-    # 2. Executive Capabilities & Strategic Highlights
-    add_section_header("Executive Capabilities & Strategic Alignment")
-    for skill_bullet in skills_list:
-        p = doc.add_paragraph(style='List Bullet')
-        p.paragraph_format.space_after = Pt(2)
-        p.paragraph_format.space_before = Pt(0)
-        parts = skill_bullet.split(":", 1)
+    # 2. Executive Summary
+    format_heading("EXECUTIVE SUMMARY")
+    sp = doc.add_paragraph(tailored_data.get("executive_summary", ""))
+    sp.paragraph_format.space_after = Pt(3)
+    sp.paragraph_format.line_spacing = 1.05
+
+    # 3. Executive Capabilities & Impact Highlights (Re-ordered & Reshaped)
+    format_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS")
+    for cap in tailored_data.get("capabilities", []):
+        cp = doc.add_paragraph(style='List Bullet')
+        cp.paragraph_format.space_before = Pt(0)
+        cp.paragraph_format.space_after = Pt(2)
+        cp.paragraph_format.line_spacing = 1.05
+        parts = cap.split(":", 1)
         if len(parts) == 2:
-            p.add_run(parts[0] + ":").bold = True
-            p.add_run(parts[1])
+            r_bold = cp.add_run(parts[0] + ":")
+            r_bold.bold = True
+            cp.add_run(parts[1])
         else:
-            p.add_run(skill_bullet)
+            cp.add_run(cap)
 
-    # 3. Professional Experience (Full Detail)
-    add_section_header("Professional Experience")
-    for role in MASTER_PROFILE['roles']:
-        rp = doc.add_paragraph()
-        rp.paragraph_format.space_before = Pt(6)
-        rp.paragraph_format.space_after = Pt(1)
-        
-        r1 = rp.add_run(f"{role['role_title']} | ")
-        r1.bold = True
-        r2 = rp.add_run(role['company'])
-        r2.bold = True
-        
-        lp = doc.add_paragraph()
-        lp.paragraph_format.space_after = Pt(2)
-        r_loc = lp.add_run(f"{role['location']}  |  {role['dates']}")
-        r_loc.font.size = Pt(8.5)
-        r_loc.italic = True
-        r_loc.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
-
-        for bullet in role['base_bullets']:
-            bp = doc.add_paragraph(bullet, style='List Bullet')
-            bp.paragraph_format.space_after = Pt(1.5)
-            bp.paragraph_format.space_before = Pt(0)
-
-    # 4. Enterprise Tech Stack
-    add_section_header("Technology Stack & Digital Architecture")
-    for category, stack in MASTER_PROFILE['tech_stack'].items():
-        tp = doc.add_paragraph(style='List Bullet')
-        tp.paragraph_format.space_after = Pt(1.5)
-        tp.paragraph_format.space_before = Pt(0)
-        tp.add_run(f"{category}: ").bold = True
-        tp.add_run(stack)
-
-    # 5. Honors & Recognition
-    add_section_header("Honors & Global Recognition")
-    for honor in MASTER_PROFILE['honors']:
-        hp = doc.add_paragraph(honor, style='List Bullet')
-        hp.paragraph_format.space_after = Pt(1.5)
+    # 4. Honors & Recognition
+    format_heading("HONORS & RECOGNITION")
+    for h in MASTER_STATIC['honors']:
+        hp = doc.add_paragraph(h, style='List Bullet')
         hp.paragraph_format.space_before = Pt(0)
+        hp.paragraph_format.space_after = Pt(1)
 
-    # 6. Education & Languages
-    add_section_header("Education & Credentials")
-    for edu in MASTER_PROFILE['education']:
+    # 5. Education & Languages
+    format_heading("EDUCATION")
+    for edu in MASTER_STATIC['education']:
         ep = doc.add_paragraph(style='List Bullet')
-        ep.paragraph_format.space_after = Pt(1.5)
         ep.paragraph_format.space_before = Pt(0)
+        ep.paragraph_format.space_after = Pt(1)
         ep.add_run(edu['degree'] + " – ").bold = True
-        ep.add_run(edu['institution'])
-        
+        ep.add_run(edu['details'])
+
+    format_heading("LANGUAGES & INTERESTS")
     lp = doc.add_paragraph()
-    lp.paragraph_format.space_before = Pt(3)
-    lp.add_run("Languages: ").bold = True
-    lp.add_run(MASTER_PROFILE['languages'])
+    lp.paragraph_format.space_before = Pt(1)
+    lp.paragraph_format.space_after = Pt(2)
+    lp.add_run(MASTER_STATIC['languages'] + "\n").font.size = Pt(8)
+    lp.add_run(MASTER_STATIC['interests']).font.size = Pt(8)
+
+    # 6. Professional Experience (3-Column Layout)
+    format_heading("PROFESSIONAL EXPERIENCE")
+    
+    table = doc.add_table(rows=1, cols=3)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    
+    col_widths = [Inches(2.5), Inches(2.5), Inches(2.5)]
+    for i, col in enumerate(table.columns):
+        for cell in col.cells:
+            cell.width = col_widths[i]
+
+    hdr_cells = table.rows[0].cells
+    hdr_titles = ["Traditional FMCG Operator", "Digital FMCG Distribution", "Distribution Transformation"]
+    for i, title in enumerate(hdr_titles):
+        hdr_cells[i].text = title
+        p = hdr_cells[i].paragraphs[0]
+        p.runs[0].bold = True
+        p.runs[0].font.size = Pt(8.5)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Set light grey shading on header cells
+        tcPr = hdr_cells[i]._tc.get_or_add_tcPr()
+        tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="E9ECEF"/>'))
+
+    row_cells = table.add_row().cells
+    for i, col in enumerate(table.columns):
+        row_cells[i].width = col_widths[i]
+
+    # Helper for cell content
+    def add_cell_block(cell, bold_title, sub_title, bullets):
+        p_title = cell.add_paragraph()
+        p_title.paragraph_format.space_before = Pt(4)
+        p_title.paragraph_format.space_after = Pt(1)
+        r_bt = p_title.add_run(bold_title)
+        r_bt.bold = True
+        r_bt.font.size = Pt(8)
+        
+        if sub_title:
+            p_sub = cell.add_paragraph()
+            p_sub.paragraph_format.space_before = Pt(0)
+            p_sub.paragraph_format.space_after = Pt(2)
+            r_st = p_sub.add_run(sub_title)
+            r_st.italic = True
+            r_st.font.size = Pt(7.5)
+
+        for b in bullets:
+            bp = cell.add_paragraph(style='List Bullet')
+            bp.paragraph_format.space_before = Pt(0)
+            bp.paragraph_format.space_after = Pt(2)
+            bp.paragraph_format.line_spacing = 1.0
+            r_b = bp.add_run(b)
+            r_b.font.size = Pt(7.5)
+
+    # Column 1: Traditional FMCG
+    c1_bullets_brit = [
+        "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.",
+        "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.",
+        "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.",
+        "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.",
+        "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD)."
+    ]
+    c1_bullets_airtel = [
+        "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.",
+        "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale."
+    ]
+    add_cell_block(row_cells[0], "Britannia Industries Ltd | 2007 – 2011", "Regional Sales Head – GCC\nRegional Sales & Capability Head- India", c1_bullets_brit)
+    add_cell_block(row_cells[0], "Airtel | Reliance | Tyco | 2001 – 2007", "Commercial & Training Roles", c1_bullets_airtel)
+
+    # Column 2: Digital FMCG Distribution (Conektr)
+    c2_bullets_conektr = [
+        "Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.",
+        tailored_data.get("conektr_category_bullet", "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Unilever (Dove, Sunsilk, Vaseline), P&G (Pantene, Olay), L'Oréal, and Colgate-Palmolive."),
+        "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.",
+        "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.",
+        "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.",
+        "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.",
+        "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate)."
+    ]
+    add_cell_block(row_cells[1], "Conektr Tech Global Ltd | UAE & India\nMay 2016 – Aug 2024", "Digital FMCG Principal / Distributor\nChief Executive Officer & Founder", c2_bullets_conektr)
+
+    # Column 3: Distribution Transformation
+    c3_bullets_trans = [
+        "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.",
+        "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.",
+        "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement."
+    ]
+    c3_bullets_ivy = [
+        "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).",
+        "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.",
+        "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.",
+        "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI."
+    ]
+    add_cell_block(row_cells[2], "TransCPG Inc. & FieldAssist | 2025 – Present", "Post Exit – Transformation Advisor (Director)", c3_bullets_trans)
+    add_cell_block(row_cells[2], "Ivy Mobility Pte Ltd | 2011 – 2016", "Business Head – MEA", c3_bullets_ivy)
+
+    # Clean borders XML helper on table
+    tblPr = table._tbl.tblPr
+    tblBorders = parse_xml(
+        r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        r'<w:top w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
+        r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
+        r'</w:tblBorders>'
+    )
+    tblPr.append(tblBorders)
+
+    # 7. Tech Stack & Why Hire Me
+    format_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE")
+    for category, stack in MASTER_STATIC['tech_stack'].items():
+        tp = doc.add_paragraph(style='List Bullet')
+        tp.paragraph_format.space_before = Pt(0)
+        tp.paragraph_format.space_after = Pt(1)
+        r_cat = tp.add_run(f"{category}: ")
+        r_cat.bold = True
+        r_cat.font.size = Pt(7.5)
+        r_st = tp.add_run(stack)
+        r_st.font.size = Pt(7.5)
+
+    format_heading("WHY HIRE ME")
+    wp = doc.add_paragraph(MASTER_STATIC['why_hire_me'])
+    wp.paragraph_format.space_before = Pt(1)
+    wp.paragraph_format.space_after = Pt(2)
+    wp.runs[0].font.size = Pt(7.5)
 
     doc_io = io.BytesIO()
     doc.save(doc_io)
     doc_io.seek(0)
     return doc_io
 
-if generate_btn and job_desc:
-    with col2:
-        st.subheader("2. Master ATS Resume Ready")
-        with st.spinner("Aligning master profile to JD keywords..."):
-            
-            # Dynamic Summary Tailored to JD
-            dynamic_summary = (
-                f"Sales & Distribution Transformation leader with 23+ years across FMCG commercial strategy, digital commerce, "
-                f"and sales technology in MEA, India, and emerging markets. Brings a rare 360° operational blend across principal-led FMCG "
-                f"commercial leadership ($100M+ P&L at Britannia), digital distribution entrepreneurship (Founded Conektr, serving 8,000+ "
-                f"retailers aggregating Colgate-Palmolive, Unilever, P&G, and L'Oréal portfolios), and multi-country SFA/RTM transformations "
-                f"for global CPG leaders (Nestlé, P&G, Coke, GSK). Expert in accelerating digital shelf flywheels (distribution, share of search, "
-                f"availability, conversion), scaling retail media ROI, activating AI-enabled route-to-market systems, and building scalable hub "
-                f"capability frameworks across cross-functional stakeholders (Customer Development, Marketing, CS&L, Finance)."
-            )
+# ==============================================================================
+# 3. STREAMLIT FRONTEND & LLM INTEGRATION
+# ==============================================================================
+st.title("🎯 Executive ATS Resume Tailoring Engine")
+st.caption("Locked Master Resume Architecture • Real-Time AI Keyword & Capability Weaving • Strict 2-Page Constraint")
 
-            # Dynamic Core Capabilities Tailored to JD
-            dynamic_skills = [
-                "Digital Commerce Hub Strategy & GTM: Proven expertise developing multi-country eCommerce growth strategies, investment priorities, and social commerce roadmaps connecting regional hub priorities with local market execution.",
-                "Digital Shelf & Flywheel Acceleration: Deep command of the end-to-end digital commerce flywheel—optimizing digital shelf presence, share of search, on-shelf availability, content integrity, and conversion rate optimization.",
-                "Commercial & Joint Business Planning ($100M+ P&L): Owned $100M+ annual revenue across GCC & India; directed 250+ distributors and 600+ field sales teams across GT, MT, Wholesale, and E-B2B channels.",
-                "Retail Media & Emerging Platform Integration: Architected B2B/B2C self-ordering ecosystems integrating digital wallets, conversational re-ordering (WhatsApp/Voice Bots), and performance-driven retail media.",
-                "AI, Automation & Shelf Analytics: Deployed computer-vision shelf auditing, AI route optimization, and unified Power BI KPI dashboards to monitor CAC, GMV, fill rates, and customer lifetime value at scale.",
-                "Hub Capability Building & Cross-Functional Governance: Experienced in partnering across Customer Development, Marketing, CS&L, and Finance to build scalable capabilities, establish common KPI frameworks, and benchmark leading practices."
-            ]
+# Sidebar for API Key (Secure & Easy)
+with st.sidebar:
+    st.header("🔑 AI Engine Configuration")
+    api_key = st.text_input("Gemini API Key:", type="password", help="Get free key at aistudio.google.com")
+    st.markdown("---")
+    st.write("📂 **Local Knowledge Archive Sync:**")
+    st.caption("Active Master: `Master resume.docx`\nActive Archive: `Additional Achievements.docx`\nRules: `Instructions for Tool and AI Knowledge.docx`")
 
-            docx_data = create_master_docx(custom_role, dynamic_summary, dynamic_skills)
+col1, col2 = st.columns([1.1, 0.9])
 
-            st.success("✅ Complete Master Resume generated!")
-            
-            st.download_button(
-                label="📥 Download Master ATS Resume (.docx)",
-                data=docx_data,
-                file_name=f"Madhusudhanan_Janakarajan_{custom_role.replace(' ', '_')}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-            
-            st.markdown("---")
-            st.write("📌 **Template Integrity:** Contains 100% of your career history, metrics ($100M+ P&L, $15M VC Exit, 2,000+ SFA users), Tech Stack, Honors, and Education formatted in a single-column, ATS-compliant structure.")
+with col1:
+    st.subheader("1. Job Inputs & Specifics")
+    job_desc = st.text_area("Target Job Description (JD):", height=240, placeholder="Paste JD here...")
+    special_instructions = st.text_area("Special Instructions & Context (Optional):", height=130, 
+                                        placeholder="Add specific context, category angles, or achievements not in archive...")
+    
+    generate_btn = st.button("🚀 Generate Tailored Master Resume", type="primary")
+
+if generate_btn:
+    if not job_desc:
+        st.warning("Please paste a Job Description first.")
+    else:
+        with col2:
+            st.subheader("2. AI Analysis & Tailored File")
+            with st.spinner("Synthesizing JD & Special Instructions with Master Profile..."):
+                
+                # Check for Gemini API Key or fallback to smart heuristic engine
+                if api_key:
+                    try:
+                        client = genai.Client(api_key=api_key)
+                        prompt = f"""
+                        You are an executive resume architect for a 23+ year FMCG & Digital Commerce Executive.
+                        You must strictly adhere to the following rules:
+                        
+                        MASTER INSTRUCTIONS:
+                        1. Section 1 Header: Generate a single-line title. Must fit strictly on ONE single line. E.g., "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | [Category/Target Focus]".
+                        2. Section 2 Executive Summary: Synthesize the existing executive summary to reflect the JD's exact context without making any false claims or altering core facts ($100M+ P&L, 8,000+ retailers, $15M exit, 10+ Tier-1 CPGs). Keep strictly to 1 paragraph (~5-6 lines).
+                        3. Section 3 Capabilities: Re-order, prioritize, and lightly reshape the 5 core capability bullets based on JD match. Maintain the 5 exact core themes (Commercial & GTM, Digital B2B2C Commerce, Enterprise Transformation, Sales Capability/Training, Entrepreneurial Scaling).
+                        4. Section 4 Conektr Category Bullet: Identify the primary industry/category from the JD (e.g., Personal Care/Beauty, Beverages, Foods/Snacks, Tobacco, Healthcare) and output the tailored Conektr category aggregation bullet.
+                        
+                        JOB DESCRIPTION:
+                        {job_desc}
+                        
+                        SPECIAL INSTRUCTIONS / CONTEXT:
+                        {special_instructions}
+                        
+                        Return ONLY a valid JSON object with keys:
+                        - "header_title": string
+                        - "executive_summary": string
+                        - "capabilities": list of 5 strings (Bold lead title followed by ': ' and description)
+                        - "conektr_category_bullet": string
+                        """
+                        
+                        response = client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=prompt,
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                temperature=0.2
+                            )
+                        )
+                        tailored_data = json.loads(response.text)
+                    except Exception as e:
+                        st.error(f"AI API Error: {e}. Using deterministic synthesis.")
+                        tailored_data = {
+                            "header_title": "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | METCA Region",
+                            "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership ($100M+ P&L), digital distribution entrepreneurship (Conektr), and enterprise SaaS transformations (FieldAssist & Ivy Mobility) for 10+ tier-1 CPG enterprises including P&G, Nestlé, GSK, and Coca-Cola.",
+                            "capabilities": [
+                                "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr to 8,000+ B2B retailers managing 100+ brands and 2,000+ SKUs with BOSS loyalty and omnichannel ordering (App, Web, Conversational AI).",
+                                "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams across all trade channels.",
+                                "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations and SFA deployments (5,000+ Users) for global CPG leaders delivering ~40% drop in logistics costs.",
+                                "Sales Capability & Training Leadership: Established regional sales training operations, consultative selling (SPIN Selling), and distributor capability standards.",
+                                "Entrepreneurial Venture Scaling & Governance: Raised $15M VC funding, executed M&A exit to Al Maya Group ($1B+ conglomerate), and awarded UAE Golden Visa & USA O-1A."
+                            ],
+                            "conektr_category_bullet": "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Unilever, P&G, L'Oréal, and Colgate-Palmolive."
+                        }
+                else:
+                    # Fallback when testing without API Key
+                    tailored_data = {
+                        "header_title": "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | Hub Strategy",
+                        "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership, digital distribution entrepreneurship (Conektr), and enterprise SaaS transformations (FieldAssist & Ivy Mobility) for 10+ tier-1 CPG enterprises.",
+                        "capabilities": [
+                            "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams.",
+                            "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr (UAE's first digital FMCG distributor) to 8,000+ B2B retailers and 100+ brands.",
+                            "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations and SFA deployments (Over 5000+ Users) for global CPG leaders.",
+                            "Sales Capability & Training Leadership: Established and led regional sales training operations managing end-to-end sales induction curricula.",
+                            "Entrepreneurial Venture Scaling & Governance: Raised $15M in funding from DIFC VC and executed successful strategic M&A exit to Al Maya Group."
+                        ],
+                        "conektr_category_bullet": "Deep Category Portfolio Aggregation: Managed & distributed extensive SKU catalogs across Colgate-Palmolive, Unilever, P&G, and L'Oréal."
+                    }
+
+                docx_stream = create_master_resume_docx(tailored_data)
+                
+                st.success("✅ Tailored Master Resume Generated!")
+                st.download_button(
+                    label="📥 Download Tailored ATS Word Document (.docx)",
+                    data=docx_stream,
+                    file_name="Madhusudhanan_Janakarajan_Master_Resume.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
+                
+                with st.expander("🔍 View AI Tailored Variable Values"):
+                    st.write("**Header Line:**", tailored_data.get("header_title"))
+                    st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
+                    st.write("**Target Category Bullet:**", tailored_data.get("conektr_category_bullet"))
