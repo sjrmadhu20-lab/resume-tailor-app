@@ -91,7 +91,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD DOCUMENT GENERATION ENGINE (PRECISELY CALIBRATED)
+# 3. WORD DOCUMENT GENERATION ENGINE
 # ==============================================================================
 def create_master_resume_docx(tailored_data, highlight_changes=False):
     doc = Document()
@@ -214,13 +214,17 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Executive Capabilities & Impact Highlights (Exact 1-line space after each bullet)
+    # 3. Executive Capabilities & Impact Highlights (Enforcing 1-line space between bullets)
     add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=6, space_after=3, line_border=True)
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph(style='List Bullet')
         cp.paragraph_format.space_before = Pt(0)
-        cp.paragraph_format.space_after = Pt(6) # 1-line space after each bullet
+        cp.paragraph_format.space_after = Pt(8) # 1-line space after each bullet
         cp.paragraph_format.line_spacing = 1.05
+        
+        # Explicitly disable contextualSpacing so Word does not suppress the space_after
+        pPr = cp._p.get_or_add_pPr()
+        pPr.append(parse_xml(r'<w:contextualSpacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="0"/>'))
         
         parts = cap.split(":", 1)
         if len(parts) == 2:
@@ -398,12 +402,16 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     table._tbl.tblPr.append(tblBorders)
 
     # 7. Tech Stack (1 line space after table, and 1 line space after each bullet)
-    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=10, space_after=3, line_border=False)
+    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=12, space_after=4, line_border=False)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph(style='List Bullet')
         tp.paragraph_format.space_before = Pt(0)
-        tp.paragraph_format.space_after = Pt(6) # 1-line space after each bullet
-        tp.paragraph_format.line_spacing = 1.0
+        tp.paragraph_format.space_after = Pt(8) # Visible 1-line gap between bullets
+        tp.paragraph_format.line_spacing = 1.05
+        
+        # Explicitly disable contextualSpacing
+        pPr = tp._p.get_or_add_pPr()
+        pPr.append(parse_xml(r'<w:contextualSpacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="0"/>'))
         
         r_cat = tp.add_run(f"{category}: ")
         r_cat.bold = True
@@ -416,9 +424,9 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     # 8. Why Hire Me (1 line space after Tech stack, and ONLY 'WHY HIRE ME: ' underlined)
     p_why = doc.add_paragraph()
     p_why.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_why.paragraph_format.space_before = Pt(8) # 1 line space after tech stack
+    p_why.paragraph_format.space_before = Pt(10) # 1 full line space after Tech Stack
     p_why.paragraph_format.space_after = Pt(4)
-    p_why.paragraph_format.line_spacing = 1.0
+    p_why.paragraph_format.line_spacing = 1.05
     
     r_wh_lbl = p_why.add_run("WHY HIRE ME: ")
     r_wh_lbl.bold = True
@@ -555,7 +563,6 @@ if generate_btn:
                         "conektr_category_bullet": cat_bullet
                     }
 
-                # Generate Both Clean & Highlighted Document Versions
                 docx_clean = create_master_resume_docx(tailored_data, highlight_changes=False)
                 docx_highlighted = create_master_resume_docx(tailored_data, highlight_changes=True)
                 
