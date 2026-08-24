@@ -14,12 +14,12 @@ from google.genai import types
 st.set_page_config(page_title="Executive ATS Resume Tailor", page_icon="🎯", layout="wide")
 
 # ==============================================================================
-# 1. RETRIEVE SAVED GEMINI API KEY FROM STREAMLIT SECRETS
+# 1. RETRIEVE API KEY
 # ==============================================================================
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 # ==============================================================================
-# 2. KNOWLEDGE ARCHIVE & MASTER DATA DEFINITIONS
+# 2. MASTER KNOWLEDGE ARCHIVE (EXACT MASTER TEMPLATE & ACHIEVEMENTS)
 # ==============================================================================
 MASTER_STATIC = {
     "name": "MADHUSUDHANAN JANAKARAJAN (MADHU)",
@@ -54,12 +54,12 @@ MASTER_STATIC = {
 }
 
 # ==============================================================================
-# 3. WORD DOCUMENT GENERATION ENGINE (STRICT 2-PAGE 3-COLUMN MASTER TEMPLATE)
+# 3. WORD DOCUMENT GENERATION ENGINE (EXACT TYPOGRAPHY & 2-PAGE LOCK)
 # ==============================================================================
 def create_master_resume_docx(tailored_data):
     doc = Document()
     
-    # Strict Page Setup (0.4-0.45 in margins to lock 2-page boundary)
+    # Precise Margins matching Master Resume
     for section in doc.sections:
         section.top_margin = Inches(0.4)
         section.bottom_margin = Inches(0.4)
@@ -68,16 +68,17 @@ def create_master_resume_docx(tailored_data):
 
     style = doc.styles['Normal']
     style.font.name = 'Calibri'
-    style.font.size = Pt(8.5)
-    style.font.color.rgb = RGBColor(0x1F, 0x24, 0x21)
+    style.font.size = Pt(10)
+    style.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
     def format_heading(title):
         p = doc.add_paragraph()
-        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_before = Pt(5)
         p.paragraph_format.space_after = Pt(2)
         r = p.add_run(title.upper())
         r.bold = True
-        r.font.size = Pt(9.5)
+        r.font.name = 'Calibri'
+        r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
         pPr = p._p.get_or_add_pPr()
         pBdr = parse_xml(r'<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -85,31 +86,53 @@ def create_master_resume_docx(tailored_data):
                          r'</w:pBdr>')
         pPr.append(pBdr)
 
+    # ---------------- PAGE 1 ----------------
     # 1. Header Section
     hp = doc.add_paragraph()
     hp.alignment = WD_ALIGN_PARAGRAPH.CENTER
     hp.paragraph_format.space_after = Pt(1)
     
+    # Name: 10 pt
     r_name = hp.add_run(MASTER_STATIC['name'] + "\n")
     r_name.bold = True
-    r_name.font.size = Pt(13)
+    r_name.font.name = 'Calibri'
+    r_name.font.size = Pt(10)
     
-    # Variable Header Line (Strictly 1 Line)
-    r_title = hp.add_run(tailored_data.get("header_title", "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader") + "\n")
+    # Subtitle line: 9 pt
+    f1 = tailored_data.get("header_focus_1", "Sales & Distribution Transformation Director")
+    f2 = tailored_data.get("header_focus_2", "Beauty & Personal Care Experience")
+    full_header_line = f"{f1} | FMCG | GTM & Omnichannel Leader | {f2}"
+    
+    r_title = hp.add_run(full_header_line + "\n")
     r_title.bold = True
-    r_title.font.size = Pt(9.5)
+    r_title.font.name = 'Calibri'
+    r_title.font.size = Pt(9)
     
+    # Remaining 3 Header Lines: 10 pt
     c = MASTER_STATIC['contact']
-    r_contact = hp.add_run(f"{c['location']} | {c['phone']} | {c['email']}\n{c['linkedin']} | Portfolio: {c['portfolio']}\nVisa Status: {c['visas']}")
-    r_contact.font.size = Pt(8)
+    r_c1 = hp.add_run(f"{c['location']} | {c['phone']} | {c['email']}\n")
+    r_c1.font.name = 'Calibri'
+    r_c1.font.size = Pt(10)
+    
+    r_c2 = hp.add_run(f"{c['linkedin']} | Portfolio: {c['portfolio']}\n")
+    r_c2.font.name = 'Calibri'
+    r_c2.font.size = Pt(10)
+    
+    r_c3 = hp.add_run(f"Visa Status: {c['visas']}")
+    r_c3.font.name = 'Calibri'
+    r_c3.font.size = Pt(10)
 
-    # 2. Executive Summary
+    # 2. Executive Summary (10 pt, Locked to 7-8 Lines)
     format_heading("EXECUTIVE SUMMARY")
     sp = doc.add_paragraph(tailored_data.get("executive_summary", ""))
+    sp.paragraph_format.space_before = Pt(2)
     sp.paragraph_format.space_after = Pt(3)
     sp.paragraph_format.line_spacing = 1.05
+    for r in sp.runs:
+        r.font.name = 'Calibri'
+        r.font.size = Pt(10)
 
-    # 3. Executive Capabilities & Impact Highlights (Re-ordered & Reshaped)
+    # 3. Executive Capabilities & Impact Highlights (10 pt, 5 Points)
     format_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS")
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph(style='List Bullet')
@@ -120,34 +143,55 @@ def create_master_resume_docx(tailored_data):
         if len(parts) == 2:
             r_bold = cp.add_run(parts[0] + ":")
             r_bold.bold = True
-            cp.add_run(parts[1])
+            r_bold.font.name = 'Calibri'
+            r_bold.font.size = Pt(10)
+            r_body = cp.add_run(parts[1])
+            r_body.font.name = 'Calibri'
+            r_body.font.size = Pt(10)
         else:
-            cp.add_run(cap)
+            r_body = cp.add_run(cap)
+            r_body.font.name = 'Calibri'
+            r_body.font.size = Pt(10)
 
-    # 4. Honors & Recognition
+    # 4. Honors & Recognition (10 pt)
     format_heading("HONORS & RECOGNITION")
     for h in MASTER_STATIC['honors']:
         hp = doc.add_paragraph(h, style='List Bullet')
         hp.paragraph_format.space_before = Pt(0)
         hp.paragraph_format.space_after = Pt(1)
+        for r in hp.runs:
+            r.font.name = 'Calibri'
+            r.font.size = Pt(10)
 
-    # 5. Education & Languages
+    # 5. Education & Languages (10 pt)
     format_heading("EDUCATION")
     for edu in MASTER_STATIC['education']:
         ep = doc.add_paragraph(style='List Bullet')
         ep.paragraph_format.space_before = Pt(0)
         ep.paragraph_format.space_after = Pt(1)
-        ep.add_run(edu['degree'] + " – ").bold = True
-        ep.add_run(edu['details'])
+        r_deg = ep.add_run(edu['degree'] + " – ")
+        r_deg.bold = True
+        r_deg.font.name = 'Calibri'
+        r_deg.font.size = Pt(10)
+        r_det = ep.add_run(edu['details'])
+        r_det.font.name = 'Calibri'
+        r_det.font.size = Pt(10)
 
     format_heading("LANGUAGES & INTERESTS")
     lp = doc.add_paragraph()
     lp.paragraph_format.space_before = Pt(1)
-    lp.paragraph_format.space_after = Pt(2)
-    lp.add_run(MASTER_STATIC['languages'] + "\n").font.size = Pt(8)
-    lp.add_run(MASTER_STATIC['interests']).font.size = Pt(8)
+    lp.paragraph_format.space_after = Pt(1)
+    r_l1 = lp.add_run(MASTER_STATIC['languages'] + "\n")
+    r_l1.font.name = 'Calibri'
+    r_l1.font.size = Pt(10)
+    r_l2 = lp.add_run(MASTER_STATIC['interests'])
+    r_l2.font.name = 'Calibri'
+    r_l2.font.size = Pt(10)
 
-    # 6. Professional Experience (3-Column Layout)
+    # ---------------- PAGE 2 EXPLICIT BOUNDARY ----------------
+    doc.add_page_break()
+
+    # 6. Professional Experience (3-Column Table)
     format_heading("PROFESSIONAL EXPERIENCE")
     
     table = doc.add_table(rows=1, cols=3)
@@ -159,13 +203,15 @@ def create_master_resume_docx(tailored_data):
         for cell in col.cells:
             cell.width = col_widths[i]
 
+    # Header Row with 12 pt Bold titles
     hdr_cells = table.rows[0].cells
     hdr_titles = ["Traditional FMCG Operator", "Digital FMCG Distribution", "Distribution Transformation"]
     for i, title in enumerate(hdr_titles):
         hdr_cells[i].text = title
         p = hdr_cells[i].paragraphs[0]
         p.runs[0].bold = True
-        p.runs[0].font.size = Pt(8.5)
+        p.runs[0].font.name = 'Calibri'
+        p.runs[0].font.size = Pt(12)
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         tcPr = hdr_cells[i]._tc.get_or_add_tcPr()
         tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="E9ECEF"/>'))
@@ -176,11 +222,12 @@ def create_master_resume_docx(tailored_data):
 
     def add_cell_block(cell, bold_title, sub_title, bullets):
         p_title = cell.add_paragraph()
-        p_title.paragraph_format.space_before = Pt(4)
+        p_title.paragraph_format.space_before = Pt(3)
         p_title.paragraph_format.space_after = Pt(1)
         r_bt = p_title.add_run(bold_title)
         r_bt.bold = True
-        r_bt.font.size = Pt(8)
+        r_bt.font.name = 'Calibri'
+        r_bt.font.size = Pt(10)
         
         if sub_title:
             p_sub = cell.add_paragraph()
@@ -188,15 +235,17 @@ def create_master_resume_docx(tailored_data):
             p_sub.paragraph_format.space_after = Pt(2)
             r_st = p_sub.add_run(sub_title)
             r_st.italic = True
-            r_st.font.size = Pt(7.5)
+            r_st.font.name = 'Calibri'
+            r_st.font.size = Pt(9.5)
 
         for b in bullets:
             bp = cell.add_paragraph(style='List Bullet')
             bp.paragraph_format.space_before = Pt(0)
-            bp.paragraph_format.space_after = Pt(2)
+            bp.paragraph_format.space_after = Pt(1.5)
             bp.paragraph_format.line_spacing = 1.0
             r_b = bp.add_run(b)
-            r_b.font.size = Pt(7.5)
+            r_b.font.name = 'Calibri'
+            r_b.font.size = Pt(9.5)
 
     # Column 1: Traditional FMCG
     c1_bullets_brit = [
@@ -214,9 +263,10 @@ def create_master_resume_docx(tailored_data):
     add_cell_block(row_cells[0], "Airtel | Reliance | Tyco | 2001 – 2007", "Commercial & Training Roles", c1_bullets_airtel)
 
     # Column 2: Digital FMCG Distribution (Conektr)
+    conektr_category = tailored_data.get("conektr_category_bullet", "Deep Category Portfolio Aggregation: Managed & distributed extensive SKU catalogs across Packaged Foods, Snacking, Beverages, and Grocery essentials.")
     c2_bullets_conektr = [
         "Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.",
-        tailored_data.get("conektr_category_bullet", "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Unilever (Dove, Sunsilk, Vaseline), P&G (Pantene, Olay), L'Oréal, and Colgate-Palmolive."),
+        conektr_category,
         "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.",
         "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.",
         "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.",
@@ -240,7 +290,6 @@ def create_master_resume_docx(tailored_data):
     add_cell_block(row_cells[2], "TransCPG Inc. & FieldAssist | 2025 – Present", "Post Exit – Transformation Advisor (Director)", c3_bullets_trans)
     add_cell_block(row_cells[2], "Ivy Mobility Pte Ltd | 2011 – 2016", "Business Head – MEA", c3_bullets_ivy)
 
-    # Clean borders
     tblPr = table._tbl.tblPr
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -252,7 +301,7 @@ def create_master_resume_docx(tailored_data):
     )
     tblPr.append(tblBorders)
 
-    # 7. Tech Stack & Why Hire Me
+    # 7. Tech Stack & Why Hire Me (10 pt)
     format_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE")
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph(style='List Bullet')
@@ -260,15 +309,19 @@ def create_master_resume_docx(tailored_data):
         tp.paragraph_format.space_after = Pt(1)
         r_cat = tp.add_run(f"{category}: ")
         r_cat.bold = True
-        r_cat.font.size = Pt(7.5)
+        r_cat.font.name = 'Calibri'
+        r_cat.font.size = Pt(10)
         r_st = tp.add_run(stack)
-        r_st.font.size = Pt(7.5)
+        r_st.font.name = 'Calibri'
+        r_st.font.size = Pt(10)
 
     format_heading("WHY HIRE ME")
     wp = doc.add_paragraph(MASTER_STATIC['why_hire_me'])
     wp.paragraph_format.space_before = Pt(1)
-    wp.paragraph_format.space_after = Pt(2)
-    wp.runs[0].font.size = Pt(7.5)
+    wp.paragraph_format.space_after = Pt(1)
+    for r in wp.runs:
+        r.font.name = 'Calibri'
+        r.font.size = Pt(10)
 
     doc_io = io.BytesIO()
     doc.save(doc_io)
@@ -276,10 +329,10 @@ def create_master_resume_docx(tailored_data):
     return doc_io
 
 # ==============================================================================
-# 4. STREAMLIT FRONTEND & RESILIENT AI SYNTHESIS
+# 4. STREAMLIT FRONTEND & STRICT PROMPT GOVERNANCE
 # ==============================================================================
 st.title("🎯 Executive ATS Resume Tailoring Engine")
-st.caption("Locked Master Resume Architecture • Real-Time AI Keyword & Capability Weaving • Strict 2-Page Constraint")
+st.caption("Master Knowledge Archive • Dual Header Variables • Exact Calibri Typography • Locked 2-Page Boundary")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -289,8 +342,8 @@ with st.sidebar:
         st.warning("🟠 AI Engine: Inactive (Set GEMINI_API_KEY in Secrets)")
     
     st.markdown("---")
-    st.write("📂 **Active Knowledge Base:**")
-    st.caption("• Master Resume (Locked Template)\n• Additional Achievements Archive\n• Tailoring Rules Engine")
+    st.write("📂 **Active Knowledge Archive:**")
+    st.caption("• Master Resume (Exact Typography)\n• Additional Achievements (All Categories)\n• Dual Header & Category Engine")
 
 col1, col2 = st.columns([1.1, 0.9])
 
@@ -298,7 +351,7 @@ with col1:
     st.subheader("1. Job Inputs & Specifics")
     job_desc = st.text_area("Target Job Description (JD):", height=240, placeholder="Paste JD here...")
     special_instructions = st.text_area("Special Instructions & Context (Optional):", height=130, 
-                                        placeholder="Add specific context, category angles, or achievements not in archive...")
+                                        placeholder="E.g., Target company is a Food/Snacks company, emphasize bakery/confectionery at Britannia and grocery aggregation at Conektr...")
     
     generate_btn = st.button("🚀 Generate Tailored Master Resume", type="primary")
 
@@ -308,41 +361,59 @@ if generate_btn:
     else:
         with col2:
             st.subheader("2. AI Analysis & Tailored File")
-            with st.spinner("Synthesizing JD & Special Instructions with Master Profile..."):
+            with st.spinner("Synthesizing JD, Special Instructions & Knowledge Archive..."):
                 
                 tailored_data = None
                 if api_key:
                     prompt = f"""
-                    You are an executive resume architect for a 23+ year FMCG & Digital Commerce Executive.
-                    You must strictly adhere to the following rules:
+                    You are an executive resume architect for Madhusudhanan Janakarajan (23+ year FMCG & Digital Commerce Executive).
                     
-                    MASTER INSTRUCTIONS:
-                    1. Section 1 Header: Generate a single-line title. Must fit strictly on ONE single line. E.g., "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | [Category/Target Focus]".
-                    2. Section 2 Executive Summary: Synthesize the existing executive summary to reflect the JD's exact context without making any false claims or altering core facts ($100M+ P&L, 8,000+ retailers, $15M exit, 10+ Tier-1 CPGs). Keep strictly to 1 paragraph (~5-6 lines).
-                    3. Section 3 Capabilities: Re-order, prioritize, and lightly reshape the 5 core capability bullets based on JD match. Maintain the 5 exact core themes (Commercial & GTM, Digital B2B2C Commerce, Enterprise Transformation, Sales Capability/Training, Entrepreneurial Scaling).
-                    4. Section 4 Conektr Category Bullet: Identify the primary industry/category from the JD (e.g., Personal Care/Beauty, Beverages, Foods/Snacks, Tobacco, Healthcare) and output the tailored Conektr category aggregation bullet.
-                    
-                    JOB DESCRIPTION:
+                    STRICT RULES & CONSTRAINTS:
+                    1. SECTION 1 (HEADER TITLE DUAL VARIABLES):
+                       - Output TWO parts for the header:
+                         * "header_focus_1": The best target title matching the role (e.g. "Sales & Distribution Transformation Director", "Digital Commerce Strategy Lead", "Commercial & Capability Director").
+                         * "header_focus_2": The category or focus angle matching the JD (e.g. "Packaged Foods & Snacking Leadership", "Beauty & Personal Care Experience", "Beverages & QSR Distribution", "Regional Hub & Omnichannel GTM").
+                       - The final combined line: "[header_focus_1] | FMCG | GTM & Omnichannel Leader | [header_focus_2]" MUST fit strictly on ONE single line (9 pt font). Keep each part concise (30-45 chars max).
+
+                    2. SECTION 2 (EXECUTIVE SUMMARY - EXACT 7 TO 8 LINES):
+                       - Must be a rich, authoritative, highly comprehensive paragraph of EXACTLY 135 to 150 words (Strictly 7-8 printed lines in 10 pt font, never more, never less).
+                       - Must retain ALL core anchor metrics: 23+ years FMCG commercial strategy, rare 360° vantage (principal FMCG operator, digital distribution founder, enterprise SaaS advisor), $100M+ P&L ownership, Founded Conektr (8,000+ retailers, 100+ brands), Enterprise SFA/RTM modernizations (FieldAssist & Ivy Mobility for 10+ Tier-1 CPGs: P&G, Nestlé, GSK, Coca-Cola), delivering ~40% logistics cost optimization and ~20% sales productivity uplifts.
+                       - Seamlessly adapt the narrative focus and terminology to match the target JD without altering facts.
+
+                    3. SECTION 3 (EXECUTIVE CAPABILITIES - EXACT 5 BULLETS):
+                       - Re-order and prioritize the 5 master capability themes so the top 2 bullets address the highest priority requirements of the JD.
+                       - Maintain all 5 themes: (1) Commercial & GTM Leadership ($100M+ P&L), (2) Digital B2B2C Commerce & Omnichannel RTM, (3) Enterprise Transformation & Commercial Optimization, (4) Sales Capability & Training Leadership, (5) Entrepreneurial Venture Scaling & Governance.
+                       - Keep length balanced and formatted as 'Bold Header: Detailed metric description'.
+
+                    4. SECTION 4 (CONEKTR CATEGORY BULLET):
+                       - Detect the target company/category from JD or Special Instructions:
+                         * If Food / Snacks / Bakery: "Deep Packaged Foods & Grocery Aggregation: Managed & distributed extensive SKU catalogs across Britannia, Mondelez, Kellogg's, Nestlé, and Haldiram's."
+                         * If Beverages: "Deep Beverage & Energy Drinks Aggregation: Scaled distribution catalogs across Coca-Cola, PepsiCo, Red Bull, and institutional beverage brands."
+                         * If Personal Care / Beauty: "Deep Beauty & Personal Care Aggregation: Managed & distributed extensive SKU catalogs across Unilever (Dove, Sunsilk, Vaseline), P&G (Pantene, Olay), L'Oréal, and Colgate-Palmolive."
+                         * If Regulated / Tobacco: "Regulated Categories & Multi-Brand Aggregation: Direct commercial distribution across UAE retail for major international brands (Marlboro, Dunhill, Chesterfield) across premium and value tiers."
+                         * If Omnichannel / Tech / Healthcare: Output the relevant brand aggregation from the Knowledge Archive.
+
+                    INPUT JOB DESCRIPTION:
                     {job_desc}
-                    
-                    SPECIAL INSTRUCTIONS / CONTEXT:
+
+                    INPUT SPECIAL INSTRUCTIONS / CONTEXT:
                     {special_instructions}
-                    
-                    Return ONLY a valid JSON object with keys:
-                    - "header_title": string
-                    - "executive_summary": string
-                    - "capabilities": list of 5 strings (Bold lead title followed by ': ' and description)
-                    - "conektr_category_bullet": string
+
+                    Return ONLY a valid JSON object:
+                    {{
+                      "header_focus_1": "string",
+                      "header_focus_2": "string",
+                      "executive_summary": "string",
+                      "capabilities": ["string", "string", "string", "string", "string"],
+                      "conektr_category_bullet": "string"
+                    }}
                     """
                     
                     client = genai.Client(api_key=api_key)
-                    # Try active models in sequence to prevent 404
-                    candidate_models = ["gemini-2.5-flash", "gemini-2.5-pro"]
-                    
-                    for model_name in candidate_models:
+                    for model_candidate in ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"]:
                         try:
                             response = client.models.generate_content(
-                                model=model_name,
+                                model=model_candidate,
                                 contents=prompt,
                                 config=types.GenerateContentConfig(
                                     response_mime_type="application/json",
@@ -354,32 +425,38 @@ if generate_btn:
                         except Exception as e:
                             continue
 
-                # Fallback if API fails or is not provided
+                # Deterministic Fallback if API fails
                 if not tailored_data:
                     tailored_data = {
-                        "header_title": "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | Hub Strategy",
-                        "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership ($100M+ P&L), digital distribution entrepreneurship (Conektr), and enterprise SaaS transformations (FieldAssist & Ivy Mobility) for 10+ tier-1 CPG enterprises including P&G, Nestlé, GSK, and Coca-Cola.",
+                        "header_focus_1": "Sales & Distribution Transformation Director",
+                        "header_focus_2": "Beauty & Personal Care Experience",
+                        "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership, digital distribution entrepreneurship, and enterprise SaaS transformations with $100M+ P&L/portfolio ownership. Founded and scaled the UAE's premier digital B2B2C distribution ecosystem (Conektr), operating as a principal-cum-distribution hub aggregating 100+ global brands and 2,000+ Grocery SKUs across Foods, Beverages, Personal Care, Tobacco and Household essentials to 8,000+ retailers. Across enterprise technology advisory (FieldAssist & Ivy Mobility), spearheaded GTM/SFA modernization and Perfect Store automation for 10+ tier-1 CPG enterprises including P&G, Nestlé, GSK, Coca-Cola, PepsiCo and Haldiram's—consistently delivering ~40% logistics cost optimization and ~20% sales productivity uplifts.",
                         "capabilities": [
-                            "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr to 8,000+ B2B retailers managing 100+ brands and 2,000+ SKUs with BOSS loyalty and omnichannel ordering (App, Web, Conversational AI).",
-                            "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams across all trade channels.",
-                            "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations and SFA deployments (5,000+ Users) for global CPG leaders delivering ~40% drop in logistics costs.",
-                            "Sales Capability & Training Leadership: Established regional sales training operations, consultative selling (SPIN Selling), and distributor capability standards.",
-                            "Entrepreneurial Venture Scaling & Governance: Raised $15M VC funding, executed M&A exit to Al Maya Group ($1B+ conglomerate), and awarded UAE Golden Visa & USA O-1A."
+                            "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams across GT, MT, Wholesale, B2B, and Institutional channels. Spearheaded RTM redesign, distributor governance, trade margin economics, pricing/promotions, and Order-to-Cash optimization.",
+                            "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr (UAE's first digital FMCG distributor) to 8,000+ B2B retailers, managing 100+ brands and 2,000+ SKUs across Foods, Beverages, and Non-Food categories. Expanded into direct B2C commerce by launching the consumer app and proprietary BOSS loyalty engine (Buying, Operating, Selling & Saving), turning network grocers into fulfillment micro-hubs/dark stores. Built omnichannel ordering (App, Web, Conversational AI) with fintech-enabled payment rails.",
+                            "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations, DMS/ERP integrations and SFA deployments (Over 5000+ Users) for global CPG leaders (P&G, Nestlé, Haleon/GSK, Coca-Cola). Deployed AI route/beat optimization, AI-driven demand forecasting, and automated ordering—delivering a ~40% drop in logistics/admin costs, >30% reduction in outlet coverage costs, ~30% frontline sales productivity uplift, ~150% expansion in numeric distribution growth.",
+                            "Sales Capability & Training Leadership: Established and led regional sales training operations managing a team of certified trainers to design and deliver end-to-end sales induction and leadership curricula up to the Regional Sales Manager (RSM) level. Top-performer in consultative selling frameworks (including SPIN Selling), driving frontline execution rigor, distributor capability building, and institutionalized sales performance standards. Managed Train the Trainer, Soft skills and automation training.",
+                            "Entrepreneurial Venture Scaling & Governance: Raised $15M in funding from DIFC VC, veteran FMCG executives (ex-Mondelēz President, BAT CFO) validating commercial credibility, and executed a successful strategic M&A exit to Al Maya Group ($1B+ conglomerate). Awarded UAE Golden Visa and USA O-1A (Extraordinary Ability); featured in Bloomberg, Gulf News, and Magnitt."
                         ],
-                        "conektr_category_bullet": "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Unilever, P&G, L'Oréal, and Colgate-Palmolive."
+                        "conektr_category_bullet": "Deep Beauty & Personal Care Aggregation: Managed & distributed extensive SKU catalogs across Unilever (Dove, Sunsilk, Vaseline), P&G (Pantene, Olay), L'Oréal, and Colgate-Palmolive."
                     }
 
                 docx_stream = create_master_resume_docx(tailored_data)
                 
-                st.success("✅ Tailored Master Resume Generated!")
+                st.success("✅ Tailored Master Resume Generated Successfully!")
                 st.download_button(
                     label="📥 Download Tailored ATS Word Document (.docx)",
                     data=docx_stream,
-                    file_name="Madhusudhanan_Janakarajan_Master_Resume.docx",
+                    file_name="Madhusudhanan_Janakarajan_Tailored_Resume.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 )
                 
-                with st.expander("🔍 View AI Tailored Variable Values"):
-                    st.write("**Header Line:**", tailored_data.get("header_title"))
-                    st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
-                    st.write("**Target Category Bullet:**", tailored_data.get("conektr_category_bullet"))
+                with st.expander("🔍 View AI Tailored Variable Breakdown"):
+                    st.write("**Header Variable 1:**", tailored_data.get("header_focus_1"))
+                    st.write("**Header Variable 2:**", tailored_data.get("header_focus_2"))
+                    st.write("**Executive Summary (7-8 Lines):**", tailored_data.get("executive_summary"))
+                    st.write("**Conektr Category Bullet:**", tailored_data.get("conektr_category_bullet"))
+```[cite: 10]
+
+4. Click **Commit changes...**.
+5. Refresh your live Streamlit tab and click **"🚀 Generate Tailored Master Resume"**. Download the `.docx` and verify the font sizes and 2-page alignment in Word[cite: 13, 14].
