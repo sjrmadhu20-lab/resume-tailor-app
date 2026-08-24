@@ -20,7 +20,7 @@ st.set_page_config(page_title="Executive ATS Resume Tailor", page_icon="🎯", l
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 # ==============================================================================
-# 2. MASTER KNOWLEDGE ARCHIVE (EXACT DATA & METRICS)
+# 2. MASTER KNOWLEDGE ARCHIVE
 # ==============================================================================
 MASTER_STATIC = {
     "name": "MADHUSUDHANAN JANAKARAJAN (MADHU)",
@@ -67,8 +67,10 @@ MASTER_STATIC = {
     ]
 }
 
-# XML Helper for clickable Word hyperlinks
-def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font_size_pt=10):
+# ==============================================================================
+# 3. WORD DOCUMENT GENERATION ENGINE (STRICT SLIDE-BY-SLIDE SPECIFICATIONS)
+# ==============================================================================
+def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font_size_pt=10, is_highlighted=False):
     part = paragraph.part
     r_id = part.relate_to(url, docx.opc.constants.RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
 
@@ -82,18 +84,18 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     rPr.append(parse_xml(f'<w:color xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="{color_rgb}"/>'))
     if underline:
         rPr.append(parse_xml(f'<w:u xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="single"/>'))
+    if is_highlighted:
+        rPr.append(parse_xml(r'<w:highlight xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="yellow"/>'))
+        
     new_run.append(rPr)
     new_run.append(parse_xml(f'<w:t xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">{text}</w:t>'))
     hyperlink.append(new_run)
     paragraph._p.append(hyperlink)
 
-# ==============================================================================
-# 3. WORD DOCUMENT GENERATION ENGINE (STRICT SPECIFICATIONS)
-# ==============================================================================
-def create_master_resume_docx(tailored_data):
+def create_resume_docx(tailored_data, highlight_changes=False):
     doc = Document()
     
-    # 0.4 in Margins matching Master Resume layout
+    # 0.4 in Margins across all sides
     for section in doc.sections:
         section.top_margin = Inches(0.4)
         section.bottom_margin = Inches(0.4)
@@ -105,7 +107,7 @@ def create_master_resume_docx(tailored_data):
     style.font.size = Pt(10)
     style.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    def add_sec_heading(title, with_bottom_border=True, line_spacing_multiple=None):
+    def add_sec_heading(title, with_bottom_border=False, line_spacing_multiple=None):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         p.paragraph_format.space_before = Pt(0)
@@ -141,22 +143,36 @@ def create_master_resume_docx(tailored_data):
     r_name.font.name = 'Calibri'
     r_name.font.size = Pt(12)
 
-    # Line 2: Dual Variable Subtitle (9 pt Bold, Centered, Before: 0pt, After: 8pt, Line Spacing: 1.16)
+    # Line 2: Subtitle (9 pt Bold, Centered, Before: 0pt, After: 8pt, Line Spacing: 1.16)
     f1 = tailored_data.get("header_focus_1", "Sales & Distribution Transformation Director")
     f2 = tailored_data.get("header_focus_2", "Packaged Foods & Dairy Leadership")
-    full_header_line = f"{f1} | FMCG | GTM & Omnichannel Leader | {f2}"
     
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_sub.paragraph_format.space_before = Pt(0)
     p_sub.paragraph_format.space_after = Pt(8)
     p_sub.paragraph_format.line_spacing = 1.16
-    r_sub = p_sub.add_run(full_header_line)
-    r_sub.bold = True
-    r_sub.font.name = 'Calibri'
-    r_sub.font.size = Pt(9)
+    
+    r_f1 = p_sub.add_run(f1)
+    r_f1.bold = True
+    r_f1.font.name = 'Calibri'
+    r_f1.font.size = Pt(9)
+    if highlight_changes:
+        r_f1.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
+        
+    r_mid = p_sub.add_run(" | FMCG | GTM & Omnichannel Leader | ")
+    r_mid.bold = True
+    r_mid.font.name = 'Calibri'
+    r_mid.font.size = Pt(9)
+    
+    r_f2 = p_sub.add_run(f2)
+    r_f2.bold = True
+    r_f2.font.name = 'Calibri'
+    r_f2.font.size = Pt(9)
+    if highlight_changes:
+        r_f2.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # Contact Lines with Clickable Hyperlinks (10 pt, Centered, Before: 0pt, After: 8pt, Line Spacing: 1.16)
+    # Line 3, 4, 5: Contact Info with Hyperlinks (Centered, Before: 0pt, After: 8pt, Line Spacing: 1.16, 10 pt)
     c = MASTER_STATIC['contact']
     p_c1 = doc.add_paragraph()
     p_c1.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -188,25 +204,26 @@ def create_master_resume_docx(tailored_data):
     r_c3.font.name = 'Calibri'
     r_c3.font.size = Pt(10)
 
-    # 2. Executive Summary (Justified, Before: 0pt, After: 8pt, Line Spacing: 1.16, 10 pt)
-    add_sec_heading("EXECUTIVE SUMMARY", with_bottom_border=True, line_spacing_multiple=1.16)
-    sp = doc.add_paragraph(tailored_data.get("executive_summary", ""))
+    # 2. Executive Summary (NO line between heading and text! Justified, Before: 0pt, After: 8pt, Line Spacing: 1.16)
+    add_sec_heading("EXECUTIVE SUMMARY", with_bottom_border=False, line_spacing_multiple=1.16)
+    sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     sp.paragraph_format.space_before = Pt(0)
     sp.paragraph_format.space_after = Pt(8)
     sp.paragraph_format.line_spacing = 1.16
-    for r in sp.runs:
-        r.font.name = 'Calibri'
-        r.font.size = Pt(10)
+    r_sum = sp.add_run(tailored_data.get("executive_summary", ""))
+    r_sum.font.name = 'Calibri'
+    r_sum.font.size = Pt(10)
+    if highlight_changes:
+        r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Executive Capabilities & Impact Highlights (Bullets: Left, Indent Left: -0.06", Hanging: 0.25", After: 6pt, Single)
+    # 3. Executive Capabilities & Impact Highlights ("There is a line before this section" -> with_bottom_border=True)
     add_sec_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", with_bottom_border=True, line_spacing_multiple=None)
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph()
         cp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        cp.paragraph_format.left_indent = Inches(-0.06)
+        cp.paragraph_format.left_indent = Inches(0.19)
         cp.paragraph_format.first_line_indent = Inches(-0.25)
-        cp.paragraph_format.left_indent = Inches(0.19) # Net hanging indent calculation
         cp.paragraph_format.space_before = Pt(0)
         cp.paragraph_format.space_after = Pt(6)
         cp.paragraph_format.line_spacing = 1.0
@@ -222,13 +239,19 @@ def create_master_resume_docx(tailored_data):
             r_bold.bold = True
             r_bold.font.name = 'Calibri'
             r_bold.font.size = Pt(10)
+            if highlight_changes:
+                r_bold.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
             r_body = cp.add_run(parts[1])
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
+            if highlight_changes:
+                r_body.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
         else:
             r_body = cp.add_run(cap)
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
+            if highlight_changes:
+                r_body.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
     # Helper for Honors, Education, Languages (Justified, Indent Left: 0.25", Hanging: 0.25", After: 8pt, Single, Contextual Spacing)
     def add_indented_item(text, bold_prefix=""):
@@ -240,7 +263,6 @@ def create_master_resume_docx(tailored_data):
         p.paragraph_format.space_after = Pt(8)
         p.paragraph_format.line_spacing = 1.0
         
-        # Don't add space between paragraphs of the same style
         pPr = p._p.get_or_add_pPr()
         pPr.append(parse_xml(r'<w:contextualSpacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>'))
         
@@ -254,16 +276,16 @@ def create_master_resume_docx(tailored_data):
         r_t.font.size = Pt(10)
 
     # 4. Honors & Recognition
-    add_sec_heading("HONORS & RECOGNITION", with_bottom_border=True, line_spacing_multiple=None)
+    add_sec_heading("HONORS & RECOGNITION", with_bottom_border=False, line_spacing_multiple=None)
     for h in MASTER_STATIC['honors']:
         add_indented_item(h)
 
     # 5. Education & Languages
-    add_sec_heading("EDUCATION", with_bottom_border=True, line_spacing_multiple=None)
+    add_sec_heading("EDUCATION", with_bottom_border=False, line_spacing_multiple=None)
     for edu in MASTER_STATIC['education']:
         add_indented_item(edu['details'], bold_prefix=edu['degree'] + " – ")
 
-    add_sec_heading("LANGUAGES & INTERESTS", with_bottom_border=True, line_spacing_multiple=None)
+    add_sec_heading("LANGUAGES & INTERESTS", with_bottom_border=False, line_spacing_multiple=None)
     p_lang = doc.add_paragraph()
     p_lang.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p_lang.paragraph_format.left_indent = Inches(0.25)
@@ -281,7 +303,7 @@ def create_master_resume_docx(tailored_data):
     doc.add_page_break()
 
     # 6. Professional Experience (3-Column Table)
-    add_sec_heading("PROFESSIONAL EXPERIENCE", with_bottom_border=True, line_spacing_multiple=None)
+    add_sec_heading("PROFESSIONAL EXPERIENCE", with_bottom_border=False, line_spacing_multiple=None)
     
     table = doc.add_table(rows=1, cols=3)
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
@@ -289,8 +311,8 @@ def create_master_resume_docx(tailored_data):
     
     # Table indentation -0.19" and preferred width 8.0"
     tblPr = table._tbl.tblPr
-    tblPr.append(parse_xml(r'<w:tblW xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:w="11520" w:type="dxa"/>')) # 8 inches = 11520 dxa
-    tblPr.append(parse_xml(r'<w:tblInd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:w="-274" w:type="dxa"/>')) # -0.19 inches = -274 dxa
+    tblPr.append(parse_xml(r'<w:tblW xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:w="11520" w:type="dxa"/>'))
+    tblPr.append(parse_xml(r'<w:tblInd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:w="-274" w:type="dxa"/>'))
     
     col_widths = [Inches(2.63), Inches(2.63), Inches(2.63)]
     for i, col in enumerate(table.columns):
@@ -317,81 +339,128 @@ def create_master_resume_docx(tailored_data):
         tcPr = row_cells[i]._tc.get_or_add_tcPr()
         tcPr.append(parse_xml(r'<w:vAlign xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="top"/>'))
 
-    # Helper for cell content
-    def add_cell_block(cell, bold_title, sub_title, bullets, is_first=False):
-        p_title = cell.paragraphs[0] if is_first else cell.add_paragraph()
-        p_title.paragraph_format.space_before = Pt(2)
-        p_title.paragraph_format.space_after = Pt(1)
-        r_bt = p_title.add_run(bold_title)
-        r_bt.bold = True
-        r_bt.font.name = 'Calibri'
-        r_bt.font.size = Pt(10)
-        
-        if sub_title:
-            p_sub = cell.add_paragraph()
-            p_sub.paragraph_format.space_before = Pt(0)
-            p_sub.paragraph_format.space_after = Pt(2)
-            r_st = p_sub.add_run(sub_title)
-            r_st.italic = True
-            r_st.font.name = 'Calibri'
-            r_st.font.size = Pt(9.5)
+    # Helper to insert cleanly structured content blocks into cells
+    def populate_cell(cell, blocks):
+        for b_idx, block in enumerate(blocks):
+            p = cell.paragraphs[0] if b_idx == 0 else cell.add_paragraph()
+            p.paragraph_format.space_before = Pt(2)
+            p.paragraph_format.space_after = Pt(1)
+            
+            # Header Lines
+            for line in block.get("headers", []):
+                p_hdr = p if b_idx == 0 and len(cell.paragraphs) == 1 else cell.add_paragraph()
+                p_hdr.paragraph_format.space_before = Pt(0)
+                p_hdr.paragraph_format.space_after = Pt(1)
+                r = p_hdr.add_run(line["text"])
+                r.bold = line.get("bold", False)
+                r.italic = line.get("italic", False)
+                r.font.name = 'Calibri'
+                r.font.size = Pt(line.get("size", 10))
+                
+            # Bullets
+            for b_item in block.get("bullets", []):
+                bp = cell.add_paragraph()
+                bp.paragraph_format.left_indent = Inches(0.15)
+                bp.paragraph_format.first_line_indent = Inches(-0.15)
+                bp.paragraph_format.space_before = Pt(0)
+                bp.paragraph_format.space_after = Pt(2)
+                bp.paragraph_format.line_spacing = 1.0
+                
+                rb = bp.add_run("• ")
+                rb.font.name = 'Calibri'
+                rb.font.size = Pt(9.5)
+                
+                txt = b_item["text"] if isinstance(b_item, dict) else b_item
+                is_hl = b_item.get("highlight", False) if isinstance(b_item, dict) else False
+                
+                rt = bp.add_run(txt)
+                rt.font.name = 'Calibri'
+                rt.font.size = Pt(9.5)
+                if highlight_changes and is_hl:
+                    rt.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-        for b in bullets:
-            bp = cell.add_paragraph()
-            bp.paragraph_format.left_indent = Inches(0.15)
-            bp.paragraph_format.first_line_indent = Inches(-0.15)
-            bp.paragraph_format.space_before = Pt(0)
-            bp.paragraph_format.space_after = Pt(2)
-            bp.paragraph_format.line_spacing = 1.0
-            r_b_bullet = bp.add_run("• ")
-            r_b_bullet.font.name = 'Calibri'
-            r_b_bullet.font.size = Pt(9.5)
-            r_b = bp.add_run(b)
-            r_b.font.name = 'Calibri'
-            r_b.font.size = Pt(9.5)
+    # Column 1 Data Structure
+    c1_blocks = [
+        {
+            "headers": [
+                {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10},
+                {"text": "Regional Sales Head – GCC", "italic": True, "size": 9.5},
+                {"text": "Regional Sales & Capability Head- India", "italic": True, "size": 9.5}
+            ],
+            "bullets": [
+                "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.",
+                "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.",
+                "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.",
+                "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.",
+                "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD)."
+            ]
+        },
+        {
+            "headers": [
+                {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10},
+                {"text": "Commercial & Training Roles –", "italic": True, "size": 9.5}
+            ],
+            "bullets": [
+                "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.",
+                "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale."
+            ]
+        }
+    ]
 
-    # Column 1: Traditional FMCG
-    c1_bullets_brit = [
-        "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.",
-        "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.",
-        "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.",
-        "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.",
-        "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD)."
+    # Column 2 Data Structure (Conektr)
+    conektr_category = tailored_data.get("conektr_category_bullet", "Deep Packaged Foods & Dairy Aggregation: Managed & distributed extensive SKU catalogs across Britannia (Dairy & Bakery), Mondelez, Nestlé, and Kraft Heinz.")
+    c2_blocks = [
+        {
+            "headers": [
+                {"text": "Digital FMCG Principal / Distributor", "italic": True, "size": 9.5},
+                {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10},
+                {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10},
+                {"text": "May 2016 – Aug 2024", "italic": True, "size": 9.5}
+            ],
+            "bullets": [
+                "Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.",
+                {"text": conektr_category, "highlight": True},
+                "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.",
+                "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.",
+                "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.",
+                "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.",
+                "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate)."
+            ]
+        }
     ]
-    c1_bullets_airtel = [
-        "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.",
-        "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale."
-    ]
-    add_cell_block(row_cells[0], "Britannia Industries Ltd | 2007 – 2011", "Regional Sales Head – GCC\nRegional Sales & Capability Head- India", c1_bullets_brit, is_first=True)
-    add_cell_block(row_cells[0], "Airtel | Reliance | Tyco | 2001 – 2007", "Commercial & Training Roles –", c1_bullets_airtel, is_first=False)
 
-    # Column 2: Digital FMCG Distribution (Conektr)
-    conektr_category = tailored_data.get("conektr_category_bullet", "Deep Category Portfolio Aggregation: Managed & distributed extensive SKU catalogs across Packaged Foods, Snacking, Dairy, and Grocery essentials.")
-    c2_bullets_conektr = [
-        "Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.",
-        conektr_category,
-        "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.",
-        "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.",
-        "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.",
-        "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.",
-        "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate)."
+    # Column 3 Data Structure (TransCPG & Ivy Mobility)
+    c3_blocks = [
+        {
+            "headers": [
+                {"text": "Post Exit –", "italic": True, "size": 9.5},
+                {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
+                {"text": "TransCPG Inc. &", "bold": True, "size": 10},
+                {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 10}
+            ],
+            "bullets": [
+                "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.",
+                "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.",
+                "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement."
+            ]
+        },
+        {
+            "headers": [
+                {"text": "Business Head – MEA", "bold": True, "size": 10},
+                {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10}
+            ],
+            "bullets": [
+                "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).",
+                "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.",
+                "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.",
+                "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI."
+            ]
+        }
     ]
-    add_cell_block(row_cells[1], "Digital FMCG Principal / Distributor\nChief Executive Officer & Founder", "Conektr Tech Global Ltd | UAE & India\nMay 2016 – Aug 2024", c2_bullets_conektr, is_first=True)
 
-    # Column 3: Distribution Transformation
-    c3_bullets_trans = [
-        "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.",
-        "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.",
-        "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement."
-    ]
-    c3_bullets_ivy = [
-        "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).",
-        "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.",
-        "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.",
-        "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI."
-    ]
-    add_cell_block(row_cells[2], "Post Exit – Transformation Advisor (Director)", "TransCPG Inc. & FieldAssist | 2025 – Present", c3_bullets_trans, is_first=True)
-    add_cell_block(row_cells[2], "Business Head – MEA", "Ivy Mobility Pte Ltd | 2011 – 2016", c3_bullets_ivy, is_first=False)
+    populate_cell(row_cells[0], c1_blocks)
+    populate_cell(row_cells[1], c2_blocks)
+    populate_cell(row_cells[2], c3_blocks)
 
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -403,14 +472,13 @@ def create_master_resume_docx(tailored_data):
     )
     tblPr.append(tblBorders)
 
-    # 7. Tech Stack (Heading: No line above or below, Bullets: Left, -0.06" indent, 0.25" hanging, 6pt after, Single)
+    # 7. Tech Stack (Heading: NO line above/below, Bullets: Left, -0.06" indent, 0.25" hanging, 6pt after, Single)
     add_sec_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE", with_bottom_border=False, line_spacing_multiple=None)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph()
         tp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        tp.paragraph_format.left_indent = Inches(-0.06)
-        tp.paragraph_format.first_line_indent = Inches(-0.25)
         tp.paragraph_format.left_indent = Inches(0.19)
+        tp.paragraph_format.first_line_indent = Inches(-0.25)
         tp.paragraph_format.space_before = Pt(0)
         tp.paragraph_format.space_after = Pt(6)
         tp.paragraph_format.line_spacing = 1.0
@@ -423,7 +491,7 @@ def create_master_resume_docx(tailored_data):
         r_st.font.name = 'Calibri'
         r_st.font.size = Pt(10)
 
-    # 8. Why Hire Me (Heading: No line above, Paragraph: Justified, Before: 0pt, After: 8pt, Single, Blue '+' symbols)
+    # 8. Why Hire Me (Heading: NO line above, Paragraph: Justified, Before: 0pt, After: 8pt, Single, Blue '+' symbols)
     add_sec_heading("WHY HIRE ME", with_bottom_border=False, line_spacing_multiple=None)
     wp = doc.add_paragraph()
     wp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -437,7 +505,7 @@ def create_master_resume_docx(tailored_data):
         r_part.font.size = Pt(10)
         if is_plus:
             r_part.bold = True
-            r_part.font.color.rgb = RGBColor(0x00, 0x70, 0xC0) # Blue '+' symbol
+            r_part.font.color.rgb = RGBColor(0x00, 0x70, 0xC0) # Blue '+'
 
     doc_io = io.BytesIO()
     doc.save(doc_io)
@@ -445,10 +513,10 @@ def create_master_resume_docx(tailored_data):
     return doc_io
 
 # ==============================================================================
-# 4. STREAMLIT FRONTEND & ADVANCED SYNTHESIS ENGINE
+# 4. STREAMLIT FRONTEND & DUAL DOWNLOAD BUTTON ENGINE
 # ==============================================================================
 st.title("🎯 Executive ATS Resume Tailoring Engine")
-st.caption("Master Knowledge Archive • Dual Header Variables • Exact Spacing & Typography • Locked 2-Page Boundary")
+st.caption("Master Knowledge Archive • Dual Header Variables • Exact Slide-by-Slide Typography • Locked 2-Page Boundary")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -459,7 +527,7 @@ with st.sidebar:
     
     st.markdown("---")
     st.write("📂 **Active Knowledge Archive:**")
-    st.caption("• Master Resume (Exact Typography)\n• Additional Achievements (All Categories)\n• Dynamic Category Engine")
+    st.caption("• Master Resume (Exact Typography)\n• Additional Achievements (All Categories)\n• Dynamic Category & Highlight Engine")
 
 col1, col2 = st.columns([1.1, 0.9])
 
@@ -469,14 +537,14 @@ with col1:
     special_instructions = st.text_area("Special Instructions & Context (Optional):", height=130, 
                                         placeholder="E.g., Target company is Arla Foods, emphasize Dairy & Packaged Foods at Britannia/Conektr...")
     
-    generate_btn = st.button("🚀 Generate Tailored Master Resume", type="primary")
+    generate_btn = st.button("🚀 Generate Tailored Master Resumes", type="primary")
 
 if generate_btn:
     if not job_desc:
         st.warning("Please paste a Job Description first.")
     else:
         with col2:
-            st.subheader("2. AI Analysis & Tailored File")
+            st.subheader("2. AI Analysis & Tailored Files Ready")
             with st.spinner("Synthesizing JD, Special Instructions & Knowledge Archive..."):
                 
                 tailored_data = None
@@ -560,15 +628,29 @@ if generate_btn:
                         "conektr_category_bullet": cat_bullet
                     }
 
-                docx_stream = create_master_resume_docx(tailored_data)
+                # Generate Both Document Versions
+                docx_clean = create_resume_docx(tailored_data, highlight_changes=False)
+                docx_highlighted = create_resume_docx(tailored_data, highlight_changes=True)
                 
-                st.success("✅ Tailored Master Resume Generated Successfully!")
-                st.download_button(
-                    label="📥 Download Tailored ATS Word Document (.docx)",
-                    data=docx_stream,
-                    file_name="Madhusudhanan_Janakarajan_Tailored_Resume.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                )
+                st.success("✅ Resumes Generated Successfully!")
+                
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    st.download_button(
+                        label="📥 Download Clean ATS Resume (.docx)",
+                        data=docx_clean,
+                        file_name="Madhusudhanan_Janakarajan_Resume_Clean.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
+                with col_btn2:
+                    st.download_button(
+                        label="🟡 Download Highlighted Review Resume (.docx)",
+                        data=docx_highlighted,
+                        file_name="Madhusudhanan_Janakarajan_Resume_Highlighted.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
                 
                 with st.expander("🔍 View AI Tailored Variable Breakdown"):
                     st.write("**Header Variable 1:**", tailored_data.get("header_focus_1"))
