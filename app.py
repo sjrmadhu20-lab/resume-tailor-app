@@ -592,15 +592,3 @@ if generate_btn:
                     st.write("**Header Variable 2:**", tailored_data.get("header_focus_2"))
                     st.write("**Executive Summary (7-8 Lines):**", tailored_data.get("executive_summary"))
                     st.write("**Conektr Category Bullet:**", tailored_data.get("conektr_category_bullet"))
-```[cite: 15]
-
----
-
-### Step-by-Step GitHub Update
-
-1. Open `app.py` in your GitHub repository:  
-   `[https://github.com/sjrmadhu20-lab/resume-tailor-app/edit/main/app.py](https://github.com/sjrmadhu20-lab/resume-tailor-app/edit/main/app.py)`
-2. Select all (`Ctrl+A` or `Cmd+A`) and press **Delete**.
-3. Copy and paste the complete code block above directly into the file.
-4. Click the green **Commit changes...** button at the top right.
-5. In your Streamlit app tab, refresh the page, paste your target JD, and test the downloads[cite: 20].
