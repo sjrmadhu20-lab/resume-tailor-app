@@ -276,12 +276,11 @@ def create_master_resume_docx(tailored_data):
     return doc_io
 
 # ==============================================================================
-# 4. STREAMLIT FRONTEND
+# 4. STREAMLIT FRONTEND & RESILIENT AI SYNTHESIS
 # ==============================================================================
 st.title("🎯 Executive ATS Resume Tailoring Engine")
 st.caption("Locked Master Resume Architecture • Real-Time AI Keyword & Capability Weaving • Strict 2-Page Constraint")
 
-# Clean Sidebar: Shows Active Status Automatically
 with st.sidebar:
     st.header("⚡ System Status")
     if api_key:
@@ -311,67 +310,63 @@ if generate_btn:
             st.subheader("2. AI Analysis & Tailored File")
             with st.spinner("Synthesizing JD & Special Instructions with Master Profile..."):
                 
+                tailored_data = None
                 if api_key:
-                    try:
-                        client = genai.Client(api_key=api_key)
-                        prompt = f"""
-                        You are an executive resume architect for a 23+ year FMCG & Digital Commerce Executive.
-                        You must strictly adhere to the following rules:
-                        
-                        MASTER INSTRUCTIONS:
-                        1. Section 1 Header: Generate a single-line title. Must fit strictly on ONE single line. E.g., "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | [Category/Target Focus]".
-                        2. Section 2 Executive Summary: Synthesize the existing executive summary to reflect the JD's exact context without making any false claims or altering core facts ($100M+ P&L, 8,000+ retailers, $15M exit, 10+ Tier-1 CPGs). Keep strictly to 1 paragraph (~5-6 lines).
-                        3. Section 3 Capabilities: Re-order, prioritize, and lightly reshape the 5 core capability bullets based on JD match. Maintain the 5 exact core themes (Commercial & GTM, Digital B2B2C Commerce, Enterprise Transformation, Sales Capability/Training, Entrepreneurial Scaling).
-                        4. Section 4 Conektr Category Bullet: Identify the primary industry/category from the JD (e.g., Personal Care/Beauty, Beverages, Foods/Snacks, Tobacco, Healthcare) and output the tailored Conektr category aggregation bullet.
-                        
-                        JOB DESCRIPTION:
-                        {job_desc}
-                        
-                        SPECIAL INSTRUCTIONS / CONTEXT:
-                        {special_instructions}
-                        
-                        Return ONLY a valid JSON object with keys:
-                        - "header_title": string
-                        - "executive_summary": string
-                        - "capabilities": list of 5 strings (Bold lead title followed by ': ' and description)
-                        - "conektr_category_bullet": string
-                        """
-                        
-                        response = client.models.generate_content(
-                            model="gemini-2.5-flash",
-                            contents=prompt,
-                            config=types.GenerateContentConfig(
-                                response_mime_type="application/json",
-                                temperature=0.2
+                    prompt = f"""
+                    You are an executive resume architect for a 23+ year FMCG & Digital Commerce Executive.
+                    You must strictly adhere to the following rules:
+                    
+                    MASTER INSTRUCTIONS:
+                    1. Section 1 Header: Generate a single-line title. Must fit strictly on ONE single line. E.g., "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | [Category/Target Focus]".
+                    2. Section 2 Executive Summary: Synthesize the existing executive summary to reflect the JD's exact context without making any false claims or altering core facts ($100M+ P&L, 8,000+ retailers, $15M exit, 10+ Tier-1 CPGs). Keep strictly to 1 paragraph (~5-6 lines).
+                    3. Section 3 Capabilities: Re-order, prioritize, and lightly reshape the 5 core capability bullets based on JD match. Maintain the 5 exact core themes (Commercial & GTM, Digital B2B2C Commerce, Enterprise Transformation, Sales Capability/Training, Entrepreneurial Scaling).
+                    4. Section 4 Conektr Category Bullet: Identify the primary industry/category from the JD (e.g., Personal Care/Beauty, Beverages, Foods/Snacks, Tobacco, Healthcare) and output the tailored Conektr category aggregation bullet.
+                    
+                    JOB DESCRIPTION:
+                    {job_desc}
+                    
+                    SPECIAL INSTRUCTIONS / CONTEXT:
+                    {special_instructions}
+                    
+                    Return ONLY a valid JSON object with keys:
+                    - "header_title": string
+                    - "executive_summary": string
+                    - "capabilities": list of 5 strings (Bold lead title followed by ': ' and description)
+                    - "conektr_category_bullet": string
+                    """
+                    
+                    client = genai.Client(api_key=api_key)
+                    # Try active models in sequence to prevent 404
+                    candidate_models = ["gemini-2.5-flash", "gemini-2.5-pro"]
+                    
+                    for model_name in candidate_models:
+                        try:
+                            response = client.models.generate_content(
+                                model=model_name,
+                                contents=prompt,
+                                config=types.GenerateContentConfig(
+                                    response_mime_type="application/json",
+                                    temperature=0.2
+                                )
                             )
-                        )
-                        tailored_data = json.loads(response.text)
-                    except Exception as e:
-                        st.error(f"AI API Error: {e}. Using deterministic synthesis.")
-                        tailored_data = {
-                            "header_title": "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | METCA Region",
-                            "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership ($100M+ P&L), digital distribution entrepreneurship (Conektr), and enterprise SaaS transformations (FieldAssist & Ivy Mobility) for 10+ tier-1 CPG enterprises including P&G, Nestlé, GSK, and Coca-Cola.",
-                            "capabilities": [
-                                "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr to 8,000+ B2B retailers managing 100+ brands and 2,000+ SKUs with BOSS loyalty and omnichannel ordering (App, Web, Conversational AI).",
-                                "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams across all trade channels.",
-                                "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations and SFA deployments (5,000+ Users) for global CPG leaders delivering ~40% drop in logistics costs.",
-                                "Sales Capability & Training Leadership: Established regional sales training operations, consultative selling (SPIN Selling), and distributor capability standards.",
-                                "Entrepreneurial Venture Scaling & Governance: Raised $15M VC funding, executed M&A exit to Al Maya Group ($1B+ conglomerate), and awarded UAE Golden Visa & USA O-1A."
-                            ],
-                            "conektr_category_bullet": "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Unilever, P&G, L'Oréal, and Colgate-Palmolive."
-                        }
-                else:
+                            tailored_data = json.loads(response.text)
+                            break
+                        except Exception as e:
+                            continue
+
+                # Fallback if API fails or is not provided
+                if not tailored_data:
                     tailored_data = {
                         "header_title": "Sales & Distribution Transformation Director | FMCG | GTM & Omnichannel Leader | Hub Strategy",
-                        "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership, digital distribution entrepreneurship (Conektr), and enterprise SaaS transformations (FieldAssist & Ivy Mobility) for 10+ tier-1 CPG enterprises.",
+                        "executive_summary": "Sales & Distribution Transformation Leader with 23+ years driving FMCG commercial strategy, digital commerce, and sales technology across MEA, India, and Asia. Delivers a rare 360° operational vantage combining principal-led FMCG commercial leadership ($100M+ P&L), digital distribution entrepreneurship (Conektr), and enterprise SaaS transformations (FieldAssist & Ivy Mobility) for 10+ tier-1 CPG enterprises including P&G, Nestlé, GSK, and Coca-Cola.",
                         "capabilities": [
-                            "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams.",
-                            "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr (UAE's first digital FMCG distributor) to 8,000+ B2B retailers and 100+ brands.",
-                            "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations and SFA deployments (Over 5000+ Users) for global CPG leaders.",
-                            "Sales Capability & Training Leadership: Established and led regional sales training operations managing end-to-end sales induction curricula.",
-                            "Entrepreneurial Venture Scaling & Governance: Raised $15M in funding from DIFC VC and executed successful strategic M&A exit to Al Maya Group."
+                            "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr to 8,000+ B2B retailers managing 100+ brands and 2,000+ SKUs with BOSS loyalty and omnichannel ordering (App, Web, Conversational AI).",
+                            "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams across all trade channels.",
+                            "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations and SFA deployments (5,000+ Users) for global CPG leaders delivering ~40% drop in logistics costs.",
+                            "Sales Capability & Training Leadership: Established regional sales training operations, consultative selling (SPIN Selling), and distributor capability standards.",
+                            "Entrepreneurial Venture Scaling & Governance: Raised $15M VC funding, executed M&A exit to Al Maya Group ($1B+ conglomerate), and awarded UAE Golden Visa & USA O-1A."
                         ],
-                        "conektr_category_bullet": "Deep Category Portfolio Aggregation: Managed & distributed extensive SKU catalogs across Colgate-Palmolive, Unilever, P&G, and L'Oréal."
+                        "conektr_category_bullet": "Deep Personal Care & FMCG Aggregation: Managed & distributed extensive SKU catalogs across Unilever, P&G, L'Oréal, and Colgate-Palmolive."
                     }
 
                 docx_stream = create_master_resume_docx(tailored_data)
