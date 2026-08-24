@@ -91,7 +91,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD DOCUMENT GENERATION ENGINE
+# 3. WORD DOCUMENT GENERATION ENGINE (PRECISELY CALIBRATED)
 # ==============================================================================
 def create_master_resume_docx(tailored_data, highlight_changes=False):
     doc = Document()
@@ -128,7 +128,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
             pPr.append(pBdr)
 
     # ---------------- PAGE 1 ----------------
-    # 1. Header Block (Preserved exactly)
+    # 1. Header Block (Preserved completely untouched)
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_name.paragraph_format.space_before = Pt(0)
@@ -201,7 +201,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    # 2. Executive Summary (No bottom line border, Multiple 1.16, 8pt after)
+    # 2. Executive Summary
     add_heading("EXECUTIVE SUMMARY", space_before=4, space_after=2, line_border=False)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -214,12 +214,12 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Executive Capabilities & Impact Highlights (Tight 3pt spacing between bullets)
+    # 3. Executive Capabilities & Impact Highlights (Exact 1-line space after each bullet)
     add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=6, space_after=3, line_border=True)
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph(style='List Bullet')
         cp.paragraph_format.space_before = Pt(0)
-        cp.paragraph_format.space_after = Pt(3)
+        cp.paragraph_format.space_after = Pt(6) # 1-line space after each bullet
         cp.paragraph_format.line_spacing = 1.05
         
         parts = cap.split(":", 1)
@@ -268,7 +268,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # Languages & Interests (No bullet symbols, exact justified 2 lines)
+    # Languages & Interests
     add_heading("LANGUAGES & INTERESTS :", space_before=5, space_after=2, line_border=False)
     p_lang1 = doc.add_paragraph()
     p_lang1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -397,12 +397,12 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     )
     table._tbl.tblPr.append(tblBorders)
 
-    # 7. Tech Stack (Heading: NO line above/below, Bullets with tight 2pt spacing)
-    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=6, space_after=3, line_border=False)
+    # 7. Tech Stack (1 line space after table, and 1 line space after each bullet)
+    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=10, space_after=3, line_border=False)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph(style='List Bullet')
         tp.paragraph_format.space_before = Pt(0)
-        tp.paragraph_format.space_after = Pt(2)
+        tp.paragraph_format.space_after = Pt(6) # 1-line space after each bullet
         tp.paragraph_format.line_spacing = 1.0
         
         r_cat = tp.add_run(f"{category}: ")
@@ -413,15 +413,16 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         r_st.font.name = 'Calibri'
         r_st.font.size = Pt(10)
 
-    # 8. Why Hire Me (Single paragraph starting with inline bold heading)
+    # 8. Why Hire Me (1 line space after Tech stack, and ONLY 'WHY HIRE ME: ' underlined)
     p_why = doc.add_paragraph()
     p_why.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_why.paragraph_format.space_before = Pt(6)
+    p_why.paragraph_format.space_before = Pt(8) # 1 line space after tech stack
     p_why.paragraph_format.space_after = Pt(4)
     p_why.paragraph_format.line_spacing = 1.0
     
     r_wh_lbl = p_why.add_run("WHY HIRE ME: ")
     r_wh_lbl.bold = True
+    r_wh_lbl.underline = True # Underline ONLY 'WHY HIRE ME: '
     r_wh_lbl.font.name = 'Calibri'
     r_wh_lbl.font.size = Pt(10)
     
@@ -534,6 +535,7 @@ if generate_btn:
                         except Exception as e:
                             continue
 
+                # Deterministic Fallback if API fails
                 if not tailored_data:
                     is_dairy_food = "arla" in job_desc.lower() or "dairy" in job_desc.lower() or "food" in job_desc.lower()
                     h2 = "Dairy & Packaged Foods Leadership" if is_dairy_food else "Beauty & Personal Care Experience"
@@ -553,6 +555,7 @@ if generate_btn:
                         "conektr_category_bullet": cat_bullet
                     }
 
+                # Generate Both Clean & Highlighted Document Versions
                 docx_clean = create_master_resume_docx(tailored_data, highlight_changes=False)
                 docx_highlighted = create_master_resume_docx(tailored_data, highlight_changes=True)
                 
