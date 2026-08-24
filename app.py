@@ -456,7 +456,4 @@ if generate_btn:
                     st.write("**Header Variable 2:**", tailored_data.get("header_focus_2"))
                     st.write("**Executive Summary (7-8 Lines):**", tailored_data.get("executive_summary"))
                     st.write("**Conektr Category Bullet:**", tailored_data.get("conektr_category_bullet"))
-```[cite: 10]
-
-4. Click **Commit changes...**.
-5. Refresh your live Streamlit tab and click **"🚀 Generate Tailored Master Resume"**. Download the `.docx` and verify the font sizes and 2-page alignment in Word[cite: 13, 14].
+```[cite: 15]
