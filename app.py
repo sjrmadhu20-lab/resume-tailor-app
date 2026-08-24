@@ -68,7 +68,7 @@ MASTER_STATIC = {
 }
 
 # ==============================================================================
-# 3. WORD DOCUMENT GENERATION ENGINE (PRECISE CALIBRATION)
+# 3. WORD DOCUMENT GENERATION ENGINE
 # ==============================================================================
 def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font_size_pt=10, is_highlighted=False):
     part = paragraph.part
@@ -127,7 +127,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
             pPr.append(pBdr)
 
     # ---------------- PAGE 1 ----------------
-    # 1. Header Block (Preserved exactly as requested)
+    # 1. Header Block (Preserved as requested)
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_name.paragraph_format.space_before = Pt(0)
@@ -197,7 +197,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     r_c3.font.name = 'Calibri'
     r_c3.font.size = Pt(10)
 
-    # 2. Executive Summary (No bottom line border, Multiple 1.16, 8pt after)
+    # 2. Executive Summary (No bottom border line, Multiple 1.16, 8pt after)
     add_heading("EXECUTIVE SUMMARY", space_before=4, space_after=2, line_border=False)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -238,33 +238,33 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
             if highlight_changes:
                 r_body.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # Helper for Honors, Education, Languages (Exact Bullet Style & Spacing)
-    def add_section_bullet(text, bold_prefix=""):
+    # 4. Honors & Recognition
+    add_heading("HONORS & RECOGNITION", space_before=6, space_after=2, line_border=False)
+    for h in MASTER_STATIC['honors']:
         p = doc.add_paragraph(style='List Bullet')
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(2)
         p.paragraph_format.line_spacing = 1.0
-        
-        if bold_prefix:
-            r_bp = p.add_run(bold_prefix)
-            r_bp.bold = True
-            r_bp.font.name = 'Calibri'
-            r_bp.font.size = Pt(10)
-        r_t = p.add_run(text)
+        r_t = p.add_run(h)
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # 4. Honors & Recognition
-    add_heading("HONORS & RECOGNITION", space_before=5, space_after=2, line_border=False)
-    for h in MASTER_STATIC['honors']:
-        add_section_bullet(h)
-
     # 5. Education & Languages
-    add_heading("EDUCATION", space_before=5, space_after=2, line_border=False)
+    add_heading("EDUCATION", space_before=6, space_after=2, line_border=False)
     for edu in MASTER_STATIC['education']:
-        add_section_bullet(edu['details'], bold_prefix=edu['degree'] + " – ")
+        p = doc.add_paragraph(style='List Bullet')
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.line_spacing = 1.0
+        r_bp = p.add_run(edu['degree'] + " – ")
+        r_bp.bold = True
+        r_bp.font.name = 'Calibri'
+        r_bp.font.size = Pt(10)
+        r_t = p.add_run(edu['details'])
+        r_t.font.name = 'Calibri'
+        r_t.font.size = Pt(10)
 
-    add_heading("LANGUAGES & INTERESTS :", space_before=5, space_after=2, line_border=False)
+    add_heading("LANGUAGES & INTERESTS :", space_before=6, space_after=2, line_border=False)
     lp = doc.add_paragraph()
     lp.paragraph_format.left_indent = Inches(0.25)
     lp.paragraph_format.space_before = Pt(0)
@@ -280,7 +280,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     # ---------------- PAGE 2 EXPLICIT BOUNDARY ----------------
     doc.add_page_break()
 
-    # 6. Professional Experience (3-Column Table - Gap between heading and table minimized)
+    # 6. Professional Experience (3-Column Table)
     add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=2, line_border=False)
     
     table = doc.add_table(rows=2, cols=3)
@@ -292,7 +292,6 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         for i, cell in enumerate(row.cells):
             cell.width = col_widths[i]
 
-    # Header Row
     hdr_titles = ["Traditional FMCG Operator", "Digital FMCG Distribution", "Distribution Transformation"]
     for i, title in enumerate(hdr_titles):
         cell = table.rows[0].cells[i]
@@ -311,7 +310,6 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         cell.text = ""
         for idx, item in enumerate(item_list):
             p = cell.add_paragraph()
-            # Tighter top spacing on the first paragraph to eliminate unnecessary table gap
             p.paragraph_format.space_before = Pt(0 if idx == 0 else item.get("space_before", 0))
             p.paragraph_format.space_after = Pt(item.get("space_after", 1))
             
@@ -328,7 +326,6 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
             if highlight_changes and item.get("highlight", False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # Column 0: Traditional FMCG Operator
     c0_items = [
         {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 1},
         {"text": "Regional Sales Head – GCC", "italic": True, "size": 9.5},
@@ -344,7 +341,6 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 9.5}
     ]
 
-    # Column 1: Digital FMCG Distribution
     conektr_cat = tailored_data.get("conektr_category_bullet", "Deep Packaged Foods & Dairy Aggregation: Managed & distributed extensive SKU catalogs across Britannia (Dairy & Bakery), Mondelez, Nestlé, and Kraft Heinz.")
     c1_items = [
         {"text": "Digital FMCG Principal / Distributor", "italic": True, "size": 9.5, "space_before": 1},
@@ -360,7 +356,6 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 9.5}
     ]
 
-    # Column 2: Distribution Transformation
     c2_items = [
         {"text": "Post Exit –", "italic": True, "size": 9.5, "space_before": 1},
         {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
@@ -391,7 +386,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     )
     table._tbl.tblPr.append(tblBorders)
 
-    # 7. Tech Stack (Balanced padding matching master spacing)
+    # 7. Tech Stack
     add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=6, space_after=3, line_border=False)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph(style='List Bullet')
@@ -407,7 +402,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         r_st.font.name = 'Calibri'
         r_st.font.size = Pt(10)
 
-    # 8. Why Hire Me (Balanced padding matching master spacing)
+    # 8. Why Hire Me
     add_heading("WHY HIRE ME", space_before=6, space_after=3, line_border=False)
     wp = doc.add_paragraph()
     wp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
