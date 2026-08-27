@@ -1268,4 +1268,4 @@ if st.session_state.get("has_results", False):
                 data=st.session_state["comb_pdf"],
                 file_name=f"1_Complete_Application_Set_Cover_Resume_Matrix.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                use_container_width=True)
