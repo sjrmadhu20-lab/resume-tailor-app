@@ -461,7 +461,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. REPORTLAB PDF BUILDER (JUSTIFIED, UNIFORM FONT & ROW BREATHING SPACE)
+# 4. REPORTLAB PDF BUILDER (JUSTIFIED & PROPORTIONAL PADDING)
 # ==============================================================================
 def create_cover_letter_match_matrix_pdf(cover_data):
     buffer = io.BytesIO()
@@ -476,15 +476,12 @@ def create_cover_letter_match_matrix_pdf(cover_data):
 
     styles = getSampleStyleSheet()
     
-    # Clean, uniform font sizing (Calibri / Helvetica)
     title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12.5, leading=15.5, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER, spaceAfter=10)
     subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceBefore=8, spaceAfter=8)
     salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceAfter=8)
     
-    # Justified body style
     body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, spaceAfter=8)
     
-    # Perfectly spaced, indented and justified bullets matching user screenshot
     bullet_style = ParagraphStyle(
         'Bullet', 
         parent=styles['Normal'], 
@@ -501,7 +498,6 @@ def create_cover_letter_match_matrix_pdf(cover_data):
     
     sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceBefore=8)
     
-    # Table Styles: Unified font sizes (9 pt throughout), left vs justified alignment
     th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER)
     td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_LEFT)
     td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
@@ -548,8 +544,8 @@ def create_cover_letter_match_matrix_pdf(cover_data):
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),    # Generous breathing space between rows
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6), # Generous breathing space between rows
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('LEFTPADDING', (0, 0), (-1, -1), 7),
         ('RIGHTPADDING', (0, 0), (-1, -1), 7),
     ]))
@@ -561,7 +557,7 @@ def create_cover_letter_match_matrix_pdf(cover_data):
     return buffer.getvalue()
 
 # ==============================================================================
-# 5. WORD COVER LETTER & MATCH MATRIX BUILDER (.DOCX - CALIBRI 11 JUSTIFIED)
+# 5. WORD COVER LETTER & MATCH MATRIX BUILDER (.DOCX)
 # ==============================================================================
 def create_cover_letter_match_matrix_docx(cover_data):
     doc = Document()
@@ -612,7 +608,6 @@ def create_cover_letter_match_matrix_docx(cover_data):
     r_kh.font.name = 'Calibri'
     r_kh.font.size = Pt(11)
 
-    # Wide indented, space-after bullets with justified text wrapping
     for b in cover_data.get("cover_bullets", []):
         bp = doc.add_paragraph(style='List Bullet')
         bp.paragraph_format.left_indent = Inches(0.5)
@@ -684,7 +679,6 @@ def create_cover_letter_match_matrix_docx(cover_data):
     r_h1.font.name = 'Calibri'
     r_h1.font.size = Pt(10.5)
 
-    # Uniform Calibri font (Left vs Justified alignment, with row space padding)
     for idx, item in enumerate(matrix_items):
         row_cells = table.rows[idx + 1].cells
         row_cells[0].width = Inches(2.5)
@@ -736,7 +730,7 @@ def create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx
     return zip_buffer.getvalue()
 
 # ==============================================================================
-# 6. STREAMLIT FRONTEND & ENGINE CONTROLLER
+# 6. STREAMLIT FRONTEND & HIGH-SPEED ENGINE CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
 st.caption("Real-Time AI Tailoring • Exact Master Resume Typography • 2-Page Cover & Matrix PDF • ATS Scoring")
@@ -744,7 +738,7 @@ st.caption("Real-Time AI Tailoring • Exact Master Resume Typography • 2-Page
 with st.sidebar:
     st.header("⚡ System Status")
     if api_key:
-        st.success("🟢 Gemini AI Engine: Active")
+        st.success("🟢 Gemini AI Engine: Active (Optimized ⚡)")
     else:
         st.error("🔴 AI Engine Key Missing (Set GEMINI_API_KEY in Secrets)")
     st.markdown("---")
@@ -858,7 +852,7 @@ if generate_btn:
         st.error("API Key is missing. Please configure GEMINI_API_KEY in Streamlit Secrets.")
     else:
         with col2:
-            with st.spinner("Analyzing JD, extracting company context & generating dynamic documents..."):
+            with st.spinner("⚡ High-Speed Synthesis: Generating complete tailored application pack..."):
                 prompt = f"""
                 You are an executive resume architect and career strategist for Madhusudhanan Janakarajan (23+ year FMCG, Digital Transformation & Enterprise Technology Executive).
 
@@ -948,21 +942,24 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
+                # Prioritize high-speed models directly
                 model_candidates = [
-                    "gemini-3.6-flash",
-                    "gemini-3-flash",
-                    "gemini-2.0-flash"
+                    "gemini-2.5-flash",
+                    "gemini-2.0-flash",
+                    "gemini-1.5-flash"
                 ]
 
                 client = genai.Client(api_key=api_key)
                 for model_candidate in model_candidates:
                     try:
+                        # Disable thinking overhead to generate structured JSON instantly
                         response = client.models.generate_content(
                             model=model_candidate,
                             contents=prompt,
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json",
-                                temperature=0.2
+                                temperature=0.2,
+                                thinking_config=types.ThinkingConfig(thinking_budget=0)
                             )
                         )
                         raw_text = response.text.strip()
