@@ -28,7 +28,7 @@ st.set_page_config(page_title="Executive ATS Application Engine", page_icon="�
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 # ==============================================================================
-# 2. MASTER KNOWLEDGE ARCHIVE (FULL DATA & EXACT MASTER PARAGRAPHS)
+# 2. MASTER KNOWLEDGE ARCHIVE (LOCKED RESUME DATA)
 # ==============================================================================
 MASTER_CAPABILITIES = {
     "commercial": "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams across GT, MT, Wholesale, B2B, and Institutional channels. Spearheaded RTM redesign, distributor governance, trade margin economics, pricing/promotions, and Order-to-Cash optimization.",
@@ -106,7 +106,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME GENERATION ENGINE
+# 3. WORD RESUME GENERATION ENGINE (LOCKED & PRESERVED)
 # ==============================================================================
 def create_master_resume_docx(tailored_data, highlight_changes=False):
     doc = Document()
@@ -142,7 +142,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
                              r'</w:pBdr>')
             pPr.append(pBdr)
 
-    # 1. Dynamic Header Subtitle
+    # 1. Header
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_name.paragraph_format.space_before = Pt(0)
@@ -215,7 +215,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    # 2. Executive Summary (Dynamic, Rich Narrative)
+    # 2. Executive Summary
     add_heading("EXECUTIVE SUMMARY", space_before=4, space_after=2, line_border=False)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -228,7 +228,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Capabilities (Exact Full 5 Master Bullet Descriptions Reordered)
+    # 3. Capabilities
     add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=5, space_after=2, line_border=True)
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph(style='List Bullet')
@@ -460,7 +460,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. REPORTLAB PDF BUILDER (FULL-PAGE 2-PAGE SPREAD)
+# 4. REPORTLAB PDF BUILDER (UPDATED TYPOGRAPHY, SPACING & DIRECT MATRIX)
 # ==============================================================================
 def create_cover_letter_match_matrix_pdf(cover_data):
     buffer = io.BytesIO()
@@ -469,29 +469,46 @@ def create_cover_letter_match_matrix_pdf(cover_data):
         pagesize=letter,
         leftMargin=36,
         rightMargin=36,
-        topMargin=32,
-        bottomMargin=32
+        topMargin=36,
+        bottomMargin=36
     )
 
     styles = getSampleStyleSheet()
     
-    title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#002B49'), alignment=1)
-    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#111827'), spaceBefore=5, spaceAfter=5)
-    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=4, spaceAfter=5)
-    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=8.8, leading=11.8, textColor=colors.HexColor('#1F2937'), leftIndent=12, firstLineIndent=-12, spaceAfter=4)
-    sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.0, leading=12.0, textColor=colors.HexColor('#111827'), spaceBefore=5)
+    title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#002B49'), alignment=1, spaceAfter=10)
+    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#111827'), spaceBefore=8, spaceAfter=8)
+    salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceAfter=8)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#1F2937'), alignment=4, spaceAfter=8)
     
-    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.8, leading=11.0, textColor=colors.HexColor('#002B49'), alignment=0)
-    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=10.4, textColor=colors.HexColor('#1F2937'))
-    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=10.4, textColor=colors.HexColor('#1F2937'))
+    # Centered and indented bullet style
+    bullet_style = ParagraphStyle(
+        'Bullet', 
+        parent=styles['Normal'], 
+        fontName='Helvetica', 
+        fontSize=9.5, 
+        leading=13.5, 
+        textColor=colors.HexColor('#1F2937'), 
+        leftIndent=24, 
+        rightIndent=24, 
+        firstLineIndent=-12, 
+        spaceAfter=6
+    )
+    
+    sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceBefore=8)
+    
+    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#002B49'), alignment=1)
+    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.2, textColor=colors.HexColor('#1F2937'))
+    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.2, textColor=colors.HexColor('#1F2937'))
 
     story = []
 
-    # Page 1: Executive Cover Letter
-    story.append(Paragraph("EXECUTIVE COVER LETTER", title_style))
+    # ---------------- PAGE 1: COVER LETTER ----------------
+    story.append(Paragraph("COVER LETTER", title_style))
     story.append(Spacer(1, 4))
-    story.append(Paragraph(f"<b>Subject:</b> {cover_data.get('subject_line', 'Application for Executive Role')}", subject_style))
-    story.append(Paragraph("Dear Hiring Team,", body_style))
+    story.append(Paragraph(f"<b>Subject:</b> {cover_data.get('subject_line', 'Application for Target Role')}", subject_style))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph("Dear Hiring Team,", salutation_style))
+    story.append(Spacer(1, 4))
     story.append(Paragraph(cover_data.get("cover_para_1", ""), body_style))
     story.append(Paragraph(cover_data.get("cover_para_2", ""), body_style))
     story.append(Paragraph("<b>Key highlights of what I bring to this mandate include:</b>", body_style))
@@ -499,14 +516,14 @@ def create_cover_letter_match_matrix_pdf(cover_data):
     for b in cover_data.get("cover_bullets", []):
         story.append(Paragraph(f"• {b}", bullet_style))
 
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 4))
     story.append(Paragraph(cover_data.get("cover_para_closing", ""), body_style))
     story.append(Paragraph("Sincerely,<br/><b>Madhusudhanan Janakarajan (Madhu)</b><br/>+971 50 654 7858 | sjrmadhu20@gmail.com", sign_style))
 
-    # Page 2: Match Matrix Table
+    # ---------------- PAGE 2: MATCH MATRIX ----------------
     story.append(PageBreak())
     company_name = cover_data.get('target_company', 'TARGET ORGANIZATION').upper()
-    story.append(Paragraph(f"STRATEGIC MATCH MATRIX — {company_name}", title_style))
+    story.append(Paragraph("MATCH MATRIX", title_style))
     story.append(Spacer(1, 6))
 
     matrix_rows = [[
@@ -517,19 +534,19 @@ def create_cover_letter_match_matrix_pdf(cover_data):
     for item in cover_data.get("matrix_items", []):
         matrix_rows.append([
             Paragraph(f"<b>{item.get('requirement_title', '')}</b><br/><font color='#4B5563'>{item.get('requirement_desc', '')}</font>", td_left),
-            Paragraph(f"<b>{item.get('match_title', '')}:</b> {item.get('match_desc', '')}", td_right)
+            Paragraph(item.get('match_desc', ''), td_right)
         ])
 
     matrix_table = Table(matrix_rows, colWidths=[2.5 * inch, 4.9 * inch])
     matrix_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
-        ('TOPPADDING', (0, 0), (-1, -1), 3.0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3.0),
-        ('LEFTPADDING', (0, 0), (-1, -1), 5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
 
     story.append(matrix_table)
@@ -539,7 +556,7 @@ def create_cover_letter_match_matrix_pdf(cover_data):
     return buffer.getvalue()
 
 # ==============================================================================
-# 5. WORD COVER LETTER & MATCH MATRIX BUILDER (.DOCX)
+# 5. WORD COVER LETTER & MATCH MATRIX BUILDER (.DOCX - CALIBRI 11 BODY)
 # ==============================================================================
 def create_cover_letter_match_matrix_docx(cover_data):
     doc = Document()
@@ -551,47 +568,80 @@ def create_cover_letter_match_matrix_docx(cover_data):
 
     style = doc.styles['Normal']
     style.font.name = 'Calibri'
-    style.font.size = Pt(10)
+    style.font.size = Pt(11)
+    style.font.color.rgb = RGBColor(0x1F, 0x29, 0x37)
 
-    # Page 1: Cover Letter
+    # ---------------- PAGE 1: COVER LETTER ----------------
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_t = p_title.add_run("EXECUTIVE COVER LETTER")
+    p_title.paragraph_format.space_after = Pt(10)
+    r_t = p_title.add_run("COVER LETTER")
     r_t.bold = True
+    r_t.font.name = 'Calibri'
     r_t.font.size = Pt(14)
 
     p_sub = doc.add_paragraph()
+    p_sub.paragraph_format.space_before = Pt(6)
+    p_sub.paragraph_format.space_after = Pt(8)
     r_sb = p_sub.add_run(f"Subject: {cover_data.get('subject_line', '')}")
     r_sb.bold = True
+    r_sb.font.name = 'Calibri'
+    r_sb.font.size = Pt(11)
 
-    doc.add_paragraph("Dear Hiring Team,")
-    doc.add_paragraph(cover_data.get("cover_para_1", ""))
-    doc.add_paragraph(cover_data.get("cover_para_2", ""))
+    p_d = doc.add_paragraph("Dear Hiring Team,")
+    p_d.paragraph_format.space_before = Pt(6)
+    p_d.paragraph_format.space_after = Pt(8)
+
+    p_p1 = doc.add_paragraph(cover_data.get("cover_para_1", ""))
+    p_p1.paragraph_format.space_after = Pt(8)
+    p_p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    p_p2 = doc.add_paragraph(cover_data.get("cover_para_2", ""))
+    p_p2.paragraph_format.space_after = Pt(8)
+    p_p2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     p_kh = doc.add_paragraph()
+    p_kh.paragraph_format.space_after = Pt(6)
     r_kh = p_kh.add_run("Key highlights of what I bring to this mandate include:")
     r_kh.bold = True
+    r_kh.font.name = 'Calibri'
+    r_kh.font.size = Pt(11)
 
+    # Indented and centered highlights
     for b in cover_data.get("cover_bullets", []):
         bp = doc.add_paragraph(style='List Bullet')
-        bp.paragraph_format.space_after = Pt(2)
-        bp.add_run(b)
+        bp.paragraph_format.left_indent = Inches(0.4)
+        bp.paragraph_format.right_indent = Inches(0.4)
+        bp.paragraph_format.space_after = Pt(4)
+        bp.paragraph_format.line_spacing = 1.1
+        r_b = bp.add_run(b)
+        r_b.font.name = 'Calibri'
+        r_b.font.size = Pt(10.5)
 
-    doc.add_paragraph(cover_data.get("cover_para_closing", ""))
+    p_cl = doc.add_paragraph(cover_data.get("cover_para_closing", ""))
+    p_cl.paragraph_format.space_before = Pt(6)
+    p_cl.paragraph_format.space_after = Pt(8)
+    p_cl.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     p_sign = doc.add_paragraph()
-    p_sign.add_run("Sincerely,\n").bold = False
-    p_sign.add_run("Madhusudhanan Janakarajan (Madhu)\n").bold = True
-    p_sign.add_run("+971 50 654 7858 | sjrmadhu20@gmail.com")
+    p_sign.paragraph_format.space_before = Pt(8)
+    r_s0 = p_sign.add_run("Sincerely,\n")
+    r_s0.font.name = 'Calibri'
+    r_s1 = p_sign.add_run("Madhusudhanan Janakarajan (Madhu)\n")
+    r_s1.bold = True
+    r_s1.font.name = 'Calibri'
+    r_s2 = p_sign.add_run("+971 50 654 7858 | sjrmadhu20@gmail.com")
+    r_s2.font.name = 'Calibri'
 
-    # Page 2: Match Matrix
+    # ---------------- PAGE 2: MATCH MATRIX ----------------
     doc.add_page_break()
     p_mtitle = doc.add_paragraph()
     p_mtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    company_name = cover_data.get('target_company', 'TARGET ORGANIZATION').upper()
-    r_mt = p_mtitle.add_run(f"STRATEGIC MATCH MATRIX — {company_name}")
+    p_mtitle.paragraph_format.space_after = Pt(10)
+    r_mt = p_mtitle.add_run("MATCH MATRIX")
     r_mt.bold = True
-    r_mt.font.size = Pt(13)
+    r_mt.font.name = 'Calibri'
+    r_mt.font.size = Pt(14)
 
     matrix_items = cover_data.get("matrix_items", [])
     table = doc.add_table(rows=len(matrix_items) + 1, cols=2)
@@ -602,9 +652,22 @@ def create_cover_letter_match_matrix_docx(cover_data):
 
     cell_0 = table.rows[0].cells[0]
     cell_1 = table.rows[0].cells[1]
-    cell_0.paragraphs[0].add_run("Target Job Requirement / Focus Domain").bold = True
-    cell_1.paragraphs[0].add_run("How I Match (Evidence & Track Record)").bold = True
+    
+    p_h0 = cell_0.paragraphs[0]
+    p_h0.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_h0 = p_h0.add_run("Target Job Requirement / Focus Domain")
+    r_h0.bold = True
+    r_h0.font.name = 'Calibri'
+    r_h0.font.size = Pt(10.5)
 
+    p_h1 = cell_1.paragraphs[0]
+    p_h1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_h1 = p_h1.add_run("How I Match (Evidence & Track Record)")
+    r_h1.bold = True
+    r_h1.font.name = 'Calibri'
+    r_h1.font.size = Pt(10.5)
+
+    # Clean narrative rows without bold/hyphen repetition
     for idx, item in enumerate(matrix_items):
         row_cells = table.rows[idx + 1].cells
         row_cells[0].width = Inches(2.5)
@@ -613,13 +676,16 @@ def create_cover_letter_match_matrix_docx(cover_data):
         p0 = row_cells[0].paragraphs[0]
         r_rt = p0.add_run(item.get('requirement_title', '') + "\n")
         r_rt.bold = True
+        r_rt.font.name = 'Calibri'
+        r_rt.font.size = Pt(10)
         r_rd = p0.add_run(item.get('requirement_desc', ''))
-        r_rd.font.size = Pt(9)
+        r_rd.font.name = 'Calibri'
+        r_rd.font.size = Pt(9.5)
         
         p1 = row_cells[1].paragraphs[0]
-        r_mt = p1.add_run(item.get('match_title', '') + ": ")
-        r_mt.bold = True
-        p1.add_run(item.get('match_desc', ''))
+        r_mt = p1.add_run(item.get('match_desc', ''))
+        r_mt.font.name = 'Calibri'
+        r_mt.font.size = Pt(10)
 
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -806,7 +872,7 @@ if generate_btn:
                 7. ATS MATCH SCORE (INTEGER 88-97):
                    - "ats_match_score": Integer reflecting alignment with the provided JD.
 
-                8. FULL-PAGE COVER LETTER & MATCH MATRIX:
+                8. COVER LETTER & MATCH MATRIX:
                    - "subject_line": "Application for [Target Role] - [Target Company]"
                    - "cover_para_1": Authoritative opening explicitly referencing the company name, role title, and candidate's 23+ year track record.
                    - "cover_para_2": Direct alignment with the target company's specific commercial and digital priorities based on JD and special instructions.
@@ -817,6 +883,7 @@ if generate_btn:
                      4) Bridging Commercial & IT Teams ($100M+ P&L, 250+ distributors, high software adoption).
                    - "cover_para_closing": Forward-looking closing paragraph.
                    - "matrix_items": Array of EXACTLY 7 to 8 comprehensive competency rows mapping every major JD pillar to candidate evidence.
+                     IMPORTANT: In "match_desc", write a direct, comprehensive narrative paragraph demonstrating evidence WITHOUT adding a redundant bold title or hyphen at the beginning.
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -847,7 +914,6 @@ if generate_btn:
                       {{
                         "requirement_title": "string",
                         "requirement_desc": "string",
-                        "match_title": "string",
                         "match_desc": "string"
                       }}
                     ]
@@ -883,13 +949,11 @@ if generate_btn:
 
                         parsed_json = json.loads(raw_text)
                         
-                        # Rebuild capabilities array using exact master full paragraphs based on AI order
                         ordered_keys = parsed_json.get("capability_order", ["commercial", "digital", "transformation", "capability", "entrepreneurship"])
                         full_capabilities = []
                         for k in ordered_keys:
                             if k in MASTER_CAPABILITIES:
                                 full_capabilities.append(MASTER_CAPABILITIES[k])
-                        # Append any missing keys
                         for k, cap_text in MASTER_CAPABILITIES.items():
                             if cap_text not in full_capabilities:
                                 full_capabilities.append(cap_text)
@@ -909,7 +973,6 @@ if generate_btn:
                     matrix_docx = create_cover_letter_match_matrix_docx(cover_data)
                     zip_pack = create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx)
 
-                    # Update persistent session state with fresh data
                     st.session_state["tailored_data"] = tailored_data
                     st.session_state["cover_data"] = cover_data
                     st.session_state["clean_docx"] = clean_docx
@@ -935,7 +998,6 @@ if st.session_state.get("has_results", False):
         st.subheader(f"2. Application Pack: {target_co}")
         st.caption(f"Role: **{target_rl}**")
 
-        # ATS Match Score Display
         st.markdown(f"""
         <div style="
             display: flex;
@@ -976,7 +1038,6 @@ if st.session_state.get("has_results", False):
         </div>
         """, unsafe_allow_html=True)
 
-        # 1-Click Master ZIP
         st.download_button(
             label=f"📦 Download Complete Application Pack (.ZIP) — {target_co}",
             data=st.session_state["zip_pack"],
