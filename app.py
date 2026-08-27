@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import io
 import os
+import re
 import zipfile
 import docx
 from docx import Document
@@ -780,13 +781,12 @@ if generate_btn:
 
                 2. HEADER SUBTITLE DUAL VARIABLES:
                    - Format: "[header_focus_1] | FMCG | GTM & Omnichannel Leader | [header_focus_2]"
-                   - "header_focus_1": Target leadership title matching the JD (e.g. "IT & Digital Transformation Director", "Commercial & GTM Director", "Enterprise Sales Technology Director"). Max 36 chars.
-                   - "header_focus_2": Specialized domain focus matching the JD (e.g. "Enterprise Sales Technology Leader", "Dairy & Packaged Foods Leadership", "Omnichannel RTM & Digital Execution"). Max 40 chars.
+                   - "header_focus_1": Target leadership title matching the JD (e.g. "E-Commerce & Commercial Director", "Commercial & Digital Transformation Director", "IT & Sales Transformation Director"). Max 36 chars.
+                   - "header_focus_2": Specialized domain focus matching the JD (e.g. "DTC & Marketplace Scaling Leader", "Enterprise Sales Technology Leader", "Omnichannel RTM & Digital Execution"). Max 40 chars.
 
                 3. EXECUTIVE SUMMARY (EXACT 135-150 WORDS / 7-8 LINES):
                    - Authoritative paragraph dynamically tailored to the target role and company.
-                   - If the JD is technology/IT-heavy: Focus on enterprise SaaS/SFA/DMS modernizations, ERP integrations, digital product architecture, and bridging IT with sales.
-                   - If the JD is commercial/business-heavy: Focus on P&L ownership ($100M+), RTM redesign, distributor governance, and digital commerce.
+                   - Emphasize relevant commercial, digital sales, marketplace scaling, and FMCG capabilities directly addressing the JD requirements.
                    - Retain core metrics ($100M+ P&L, 8,000+ retailers, 10+ Tier-1 CPG logos: P&G, Nestlé, GSK, Coca-Cola, ~40% logistics optimization, ~20% productivity uplifts).
 
                 4. EXECUTIVE CAPABILITIES (EXACT 5 BULLETS):
@@ -851,28 +851,50 @@ if generate_btn:
                 }}
                 """
                 
-                try:
-                    client = genai.Client(api_key=api_key)
-                    response = client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            temperature=0.2
+                tailored_data = None
+                cover_data = None
+                last_error = ""
+
+                # Robust Multi-Model Candidate List
+                model_candidates = [
+                    "gemini-3.6-flash",
+                    "gemini-3-flash",
+                    "gemini-2.0-flash"
+                ]
+
+                client = genai.Client(api_key=api_key)
+                for model_candidate in model_candidates:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_candidate,
+                            contents=prompt,
+                            config=types.GenerateContentConfig(
+                                response_mime_type="application/json",
+                                temperature=0.2
+                            )
                         )
-                    )
-                    
-                    parsed_json = json.loads(response.text)
-                    tailored_data = parsed_json
-                    cover_data = parsed_json.get("cover_letter_data", {})
-                    
+                        raw_text = response.text.strip()
+                        # Sanitize markdown wrapper if returned
+                        if raw_text.startswith("```"):
+                            raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+                            raw_text = re.sub(r"\s*```$", "", raw_text)
+
+                        parsed_json = json.loads(raw_text)
+                        tailored_data = parsed_json
+                        cover_data = parsed_json.get("cover_letter_data", {})
+                        break
+                    except Exception as e:
+                        last_error = str(e)
+                        continue
+
+                if tailored_data:
                     clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
                     review_docx = create_master_resume_docx(tailored_data, highlight_changes=True)
                     matrix_pdf = create_cover_letter_match_matrix_pdf(cover_data)
                     matrix_docx = create_cover_letter_match_matrix_docx(cover_data)
                     zip_pack = create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx)
 
-                    # Store dynamically generated assets in session state
+                    # Update persistent session state with fresh data
                     st.session_state["tailored_data"] = tailored_data
                     st.session_state["cover_data"] = cover_data
                     st.session_state["clean_docx"] = clean_docx
@@ -881,9 +903,8 @@ if generate_btn:
                     st.session_state["matrix_docx"] = matrix_docx
                     st.session_state["zip_pack"] = zip_pack
                     st.session_state["has_results"] = True
-
-                except Exception as e:
-                    st.error(f"Generation Error: {str(e)}. Please verify your GEMINI_API_KEY and model availability.")
+                else:
+                    st.error(f"Generation Error: {last_error}. Please check your API key and network permissions.")
 
 # ==============================================================================
 # 7. PERSISTENT DISPLAY & DOWNLOAD AREA
