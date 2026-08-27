@@ -107,7 +107,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (LOCKED)
+# 3. WORD RESUME ENGINE (LOCKED MASTER)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -542,7 +542,6 @@ def get_match_matrix_story(cover_data, st_dict):
 
 def get_resume_story(tailored_data, st_dict):
     story = []
-    # Header
     story.append(Paragraph(MASTER_STATIC['name'], st_dict["r_name"]))
     f1 = tailored_data.get("header_focus_1", "Commercial & Digital Transformation Director")
     f2 = tailored_data.get("header_focus_2", "Enterprise Sales & Strategy Leader")
@@ -552,21 +551,17 @@ def get_resume_story(tailored_data, st_dict):
     contact_line = f"{c['location']} | {c['phone']} | {c['email']}<br/>{c['linkedin']} | Portfolio: {c['portfolio']}<br/><b>Visa Status:</b> {c['visas']}"
     story.append(Paragraph(contact_line, st_dict["r_contact"]))
     
-    # Exec Summary
     story.append(Paragraph("<b>EXECUTIVE SUMMARY</b>", st_dict["r_h"]))
     story.append(Paragraph(tailored_data.get("executive_summary", ""), st_dict["r_body"]))
     
-    # Capabilities
     story.append(Paragraph("<b>EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS</b>", st_dict["r_h"]))
     for cap in tailored_data.get("capabilities", []):
         story.append(Paragraph(f"• {cap}", st_dict["r_bullet"]))
         
-    # Honors
     story.append(Paragraph("<b>HONORS & RECOGNITION</b>", st_dict["r_h"]))
     for h in MASTER_STATIC['honors']:
         story.append(Paragraph(f"• {h}", st_dict["r_bullet"]))
         
-    # Education & Languages
     story.append(Paragraph("<b>EDUCATION</b>", st_dict["r_h"]))
     for edu in MASTER_STATIC['education']:
         story.append(Paragraph(f"• <b>{edu['degree']}</b> – {edu['details']}", st_dict["r_bullet"]))
@@ -574,11 +569,9 @@ def get_resume_story(tailored_data, st_dict):
     story.append(Paragraph(MASTER_STATIC['languages'], st_dict["r_body"]))
     story.append(Paragraph(MASTER_STATIC['interests'], st_dict["r_body"]))
     
-    # Page 2 Boundary
     story.append(PageBreak())
     story.append(Paragraph("<b>PROFESSIONAL EXPERIENCE</b>", st_dict["r_h"]))
     
-    # 3-Column Experience Summary Table in PDF
     c1_txt = "<b>Britannia Industries Ltd | 2007–2011</b><br/><i>Regional Sales Head GCC & India</i><br/>• Owned $100M+ P&L across GCC & South India.<br/>• Directed 250+ distributor networks & 600+ sales staff.<br/>• Spearheaded Britannia's 1st SFA rollout (1,000+ users).<br/>• Delivered ~30% numeric distribution growth.<br/><br/><b>Airtel | Reliance | Tyco | 2001–2007</b><br/>• Frontline execution, journey planning & capability building.<br/>• Deployed SPIN selling & CRM/LMS infrastructure."
     
     conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, food, and non-food portfolios.")
@@ -609,7 +602,6 @@ def get_resume_story(tailored_data, st_dict):
     ]))
     story.append(exp_table)
     
-    # Tech Stack & Why Hire Me
     story.append(Spacer(1, 4))
     story.append(Paragraph("<b>TECHNOLOGY STACK & DIGITAL ARCHITECTURE:</b>", st_dict["r_h"]))
     for category, stack in MASTER_STATIC['tech_stack'].items():
@@ -619,7 +611,6 @@ def get_resume_story(tailored_data, st_dict):
     story.append(Paragraph(why_text, st_dict["r_body"]))
     return story
 
-# Standalone PDF Builders
 def create_cover_letter_match_matrix_pdf(cover_data):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=36, bottomMargin=36)
@@ -638,7 +629,6 @@ def create_resume_pdf(tailored_data):
     buffer.seek(0)
     return buffer.getvalue()
 
-# File 1: Combined PDF (Cover Letter -> 2-Page Resume -> Match Matrix)
 def create_combined_application_pdf(cover_data, tailored_data):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=30, bottomMargin=30)
@@ -813,7 +803,6 @@ def create_cover_letter_match_matrix_docx(cover_data):
     doc_io.seek(0)
     return doc_io.getvalue()
 
-# File 2: Combined Word Doc (Cover Letter -> 2-Page Resume -> Match Matrix)
 def create_combined_application_docx(cover_data, tailored_data):
     doc = Document()
     for section in doc.sections:
@@ -822,13 +811,10 @@ def create_combined_application_docx(cover_data, tailored_data):
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)
     
-    # 1. Cover Letter Page
     populate_cover_letter_docx_page(doc, cover_data)
     doc.add_page_break()
-    # 2. Resume (2 Pages)
     populate_resume_document(doc, tailored_data, highlight_changes=False)
     doc.add_page_break()
-    # 3. Match Matrix Page
     populate_match_matrix_docx_page(doc, cover_data)
     
     doc_io = io.BytesIO()
@@ -836,7 +822,6 @@ def create_combined_application_docx(cover_data, tailored_data):
     doc_io.seek(0)
     return doc_io.getvalue()
 
-# Master ZIP Packager (Exact 5-File Specification)
 def create_master_application_zip(comb_pdf, comb_docx, review_docx, resume_pdf, cover_matrix_pdf):
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -849,7 +834,7 @@ def create_master_application_zip(comb_pdf, comb_docx, review_docx, resume_pdf, 
     return zip_buffer.getvalue()
 
 # ==============================================================================
-# 6. STREAMLIT FRONTEND & HIGH-SPEED ENGINE CONTROLLER
+# 6. STREAMLIT FRONTEND & ENGINE CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
 st.caption("Real-Time AI Tailoring • Multi-Format Suite • 5-Asset Master Bundle • ATS Scoring")
@@ -985,18 +970,18 @@ if generate_btn:
 
                 2. HEADER SUBTITLE DUAL VARIABLES:
                    - Format: "[header_focus_1] | FMCG | GTM & Omnichannel Leader | [header_focus_2]"
-                   - "header_focus_1": Target leadership title matching the JD (e.g. "E-Commerce & Commercial Director", "Commercial & Digital Transformation Director", "IT & Sales Transformation Director"). Max 36 chars.
-                   - "header_focus_2": Specialized domain focus matching the JD (e.g. "DTC & Marketplace Scaling Leader", "Enterprise Sales Technology Leader", "Omnichannel RTM & Digital Execution"). Max 40 chars.
+                   - "header_focus_1": Target leadership title matching the JD (e.g. "Commercial & Digital Transformation Director", "E-Commerce & Commercial Director", "Global Distributor Management Director"). Max 36 chars.
+                   - "header_focus_2": Specialized domain focus matching the JD (e.g. "Enterprise Sales Technology Leader", "Global Distributor Governance Leader", "Omnichannel RTM & Digital Execution"). Max 40 chars.
 
                 3. EXECUTIVE SUMMARY (EXACT 135-150 WORDS / 7-8 LINES):
                    - Write an authoritative, rich executive summary of EXACTLY 135 to 150 words dynamically tailored to the role and company.
-                   - Emphasize relevant commercial, digital sales, marketplace scaling, and FMCG capabilities directly addressing the JD requirements.
+                   - Emphasize relevant commercial, distributor management, and transformation capabilities directly addressing the JD requirements.
                    - Retain core metrics ($100M+ P&L, 8,000+ retailers, 10+ Tier-1 CPG logos: P&G, Nestlé, GSK, Coca-Cola, ~40% logistics optimization, ~20% productivity uplifts).
 
                 4. CAPABILITY ORDERING (PRIORITIZATION):
                    - Rank the 5 capability keys based on the JD's highest priorities (place the top 2 matching keys first):
                      Available keys: ["commercial", "digital", "transformation", "capability", "entrepreneurship"]
-                   - "capability_order": An array containing all 5 keys in ordered priority (e.g., ["digital", "commercial", "transformation", "capability", "entrepreneurship"]).
+                   - "capability_order": An array containing all 5 keys in ordered priority.
 
                 5. CONEKTR CATEGORY BULLET:
                    - Category aggregation bullet strictly tailored to the products/domain of the target company.
@@ -1013,8 +998,8 @@ if generate_btn:
                    - "cover_para_1": Authoritative opening explicitly referencing the company name, role title, and candidate's 23+ year track record.
                    - "cover_para_2": Direct alignment with the target company's specific commercial and digital priorities based on JD and special instructions.
                    - "cover_bullets": 4 high-impact bullets formatted as "Bold Category: Detailed metric description" matching the visual style:
-                     1) Enterprise Digital Commerce & SFA Systems: ...
-                     2) 0-to-1 Digital Marketplace Scaling: ...
+                     1) Global Distributor Management & Commercial Governance: ...
+                     2) Enterprise Digital Architecture & SFA Systems: ...
                      3) Measurable P&L & Operational ROI: ...
                      4) Cross-Functional Leadership & Partner Strategy: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
@@ -1061,10 +1046,10 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
+                # Globally verified models in google-genai SDK
                 model_candidates = [
-                    "gemini-2.5-flash",
                     "gemini-2.0-flash",
-                    "gemini-1.5-flash"
+                    "gemini-2.0-flash-lite"
                 ]
 
                 client = genai.Client(api_key=api_key)
@@ -1075,8 +1060,7 @@ if generate_btn:
                             contents=prompt,
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json",
-                                temperature=0.2,
-                                thinking_config=types.ThinkingConfig(thinking_budget=0)
+                                temperature=0.2
                             )
                         )
                         raw_text = response.text.strip()
@@ -1104,20 +1088,16 @@ if generate_btn:
                         continue
 
                 if tailored_data:
-                    # 1. Clean & Highlighted Resumes (.docx & .pdf)
                     clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
                     review_docx = create_master_resume_docx(tailored_data, highlight_changes=True)
                     resume_pdf = create_resume_pdf(tailored_data)
                     
-                    # 2. Cover Letter & Match Matrix (.pdf & .docx)
                     cover_matrix_pdf = create_cover_letter_match_matrix_pdf(cover_data)
                     cover_matrix_docx = create_cover_letter_match_matrix_docx(cover_data)
                     
-                    # 3. Complete Combined Packs (Cover -> Resume -> Matrix)
                     comb_pdf = create_combined_application_pdf(cover_data, tailored_data)
                     comb_docx = create_combined_application_docx(cover_data, tailored_data)
                     
-                    # 4. Master 5-Asset ZIP Bundle
                     master_zip = create_master_application_zip(comb_pdf, comb_docx, review_docx, resume_pdf, cover_matrix_pdf)
 
                     st.session_state["tailored_data"] = tailored_data
@@ -1186,7 +1166,7 @@ if st.session_state.get("has_results", False):
         </div>
         """, unsafe_allow_html=True)
 
-        # 1-Click Master ZIP (Contains all 5 exact requested files)
+        # 1-Click Master ZIP (5 Files)
         st.download_button(
             label=f"📦 Download Complete Application Bundle (.ZIP) — 5 Files",
             data=st.session_state["master_zip"],
@@ -1199,7 +1179,6 @@ if st.session_state.get("has_results", False):
         st.markdown("---")
         st.write("📄 **Individual Application Files:**")
 
-        # Row 1: Complete Combined Sets
         col_b1, col_b2 = st.columns(2)
         with col_b1:
             st.download_button(
@@ -1218,7 +1197,6 @@ if st.session_state.get("has_results", False):
                 use_container_width=True
             )
 
-        # Row 2: Review Resume & Individual PDFs
         col_b3, col_b4 = st.columns(2)
         with col_b3:
             st.download_button(
