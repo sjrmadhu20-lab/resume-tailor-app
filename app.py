@@ -466,7 +466,6 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
 def get_pdf_styles():
     styles = getSampleStyleSheet()
     
-    # Cover & Match Matrix Styles
     title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12.5, leading=15.5, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER, spaceAfter=8)
     subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceBefore=6, spaceAfter=6)
     salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceAfter=6)
@@ -478,7 +477,6 @@ def get_pdf_styles():
     td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, textColor=colors.HexColor('#1F2937'), alignment=TA_LEFT)
     td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
     
-    # Calibrated High-Density Resume Styles (Exact 2-Page Fit)
     r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11.5, leading=13.5, alignment=TA_CENTER, spaceAfter=2)
     r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.2, leading=10.5, alignment=TA_CENTER, spaceAfter=3, textColor=colors.HexColor('#111827'))
     r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName='Helvetica', fontSize=7.8, leading=10, alignment=TA_CENTER, spaceAfter=4, textColor=colors.HexColor('#374151'))
@@ -487,7 +485,6 @@ def get_pdf_styles():
     r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName='Helvetica', fontSize=7.8, leading=10.2, alignment=TA_JUSTIFY, spaceAfter=2, textColor=colors.HexColor('#1F2937'))
     r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName='Helvetica', fontSize=7.6, leading=9.8, alignment=TA_JUSTIFY, leftIndent=11, firstLineIndent=-7, spaceAfter=2.2, textColor=colors.HexColor('#1F2937'))
     
-    # Page 2 3-Column Experience Table Typography
     col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.8, leading=11, alignment=TA_CENTER, textColor=colors.HexColor('#002B49'))
     col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName='Helvetica', fontSize=7.0, leading=8.8, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
 
@@ -1131,10 +1128,11 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
+                # Valid, active endpoints for Google GenAI SDK
                 model_candidates = [
                     "gemini-2.5-flash",
                     "gemini-2.0-flash",
-                    "gemini-1.5-flash"
+                    "gemini-2.5-pro"
                 ]
 
                 client = genai.Client(api_key=api_key)
@@ -1271,48 +1269,3 @@ if st.session_state.get("has_results", False):
                 file_name=f"1_Complete_Application_Set_Cover_Resume_Matrix.pdf",
                 mime="application/pdf",
                 use_container_width=True
-            )
-        with col_b2:
-            st.download_button(
-                label="📝 2. Combined Application Set (.docx)",
-                data=st.session_state["comb_docx"],
-                file_name=f"2_Complete_Application_Set_Cover_Resume_Matrix.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True
-            )
-
-        col_b3, col_b4 = st.columns(2)
-        with col_b3:
-            st.download_button(
-                label="🟡 3. Highlighted Review Resume (.docx)",
-                data=st.session_state["review_docx"],
-                file_name=f"3_Madhusudhanan_Janakarajan_Resume_Review.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True
-            )
-        with col_b4:
-            st.download_button(
-                label="📄 4. Clean ATS Resume (.pdf)",
-                data=st.session_state["resume_pdf"],
-                file_name=f"4_Madhusudhanan_Janakarajan_Resume_Clean.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-
-        st.download_button(
-            label="📊 5. Cover Letter & Match Matrix (.pdf)",
-            data=st.session_state["cover_matrix_pdf"],
-            file_name=f"5_Cover_Letter_and_Match_Matrix.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-
-        with st.expander("🔍 View AI Tailored Dynamic Variables"):
-            st.write("**Identified Company:**", target_co)
-            st.write("**Identified Role:**", target_rl)
-            st.write("**Header Focus 1:**", tailored_data.get("header_focus_1"))
-            st.write("**Header Focus 2:**", tailored_data.get("header_focus_2"))
-            st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
-            st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
-            st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
-            st.write("**Match Matrix Rows Generated:**", len(cover_data.get("matrix_items", [])))
