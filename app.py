@@ -476,7 +476,6 @@ def get_pdf_styles():
     td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_LEFT)
     td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
     
-    # Resume-specific PDF styles
     r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=3)
     r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=4)
     r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=TA_CENTER, spaceAfter=6)
@@ -1048,8 +1047,10 @@ if generate_btn:
 
                 # Globally verified models in google-genai SDK
                 model_candidates = [
-                    "gemini-2.0-flash",
-                    "gemini-2.0-flash-lite"
+                    "gemini-3.5-flash-lite",
+                    "gemini-3.5-flash",
+                    "gemini-3-flash",
+                    "gemini-2.0-flash"
                 ]
 
                 client = genai.Client(api_key=api_key)
@@ -1060,7 +1061,8 @@ if generate_btn:
                             contents=prompt,
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json",
-                                temperature=0.2
+                                temperature=0.2,
+                                thinking_config=types.ThinkingConfig(thinking_budget=0)
                             )
                         )
                         raw_text = response.text.strip()
@@ -1141,94 +1143,4 @@ if st.session_state.get("has_results", False):
                 width: 56px;
                 height: 56px;
                 border-radius: 50%;
-                background: conic-gradient(#16A34A {score * 3.6}deg, #E5E7EB 0deg);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            ">
-                <div style="
-                    width: 42px;
-                    height: 42px;
-                    border-radius: 50%;
-                    background: white;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: bold;
-                    color: #16A34A;
-                    font-size: 14px;
-                ">{score}%</div>
-            </div>
-            <div>
-                <div style="font-weight: 700; font-size: 14.5px; color: #166534;">Target JD Alignment Score: {score}/100</div>
-                <div style="font-size: 12px; color: #15803D;">High Match: Tailored precisely to {target_co}'s role specifications.</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # 1-Click Master ZIP (5 Files)
-        st.download_button(
-            label=f"📦 Download Complete Application Bundle (.ZIP) — 5 Files",
-            data=st.session_state["master_zip"],
-            file_name=f"Madhusudhanan_Janakarajan_{target_co.replace(' ', '_')}_Full_Application_Bundle.zip",
-            mime="application/zip",
-            type="primary",
-            use_container_width=True
-        )
-
-        st.markdown("---")
-        st.write("📄 **Individual Application Files:**")
-
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            st.download_button(
-                label="📑 1. Combined Application Set (.pdf)",
-                data=st.session_state["comb_pdf"],
-                file_name=f"1_Complete_Application_Set_Cover_Resume_Matrix.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-        with col_b2:
-            st.download_button(
-                label="📝 2. Combined Application Set (.docx)",
-                data=st.session_state["comb_docx"],
-                file_name=f"2_Complete_Application_Set_Cover_Resume_Matrix.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True
-            )
-
-        col_b3, col_b4 = st.columns(2)
-        with col_b3:
-            st.download_button(
-                label="🟡 3. Highlighted Review Resume (.docx)",
-                data=st.session_state["review_docx"],
-                file_name=f"3_Madhusudhanan_Janakarajan_Resume_Review.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True
-            )
-        with col_b4:
-            st.download_button(
-                label="📄 4. Clean ATS Resume (.pdf)",
-                data=st.session_state["resume_pdf"],
-                file_name=f"4_Madhusudhanan_Janakarajan_Resume_Clean.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-
-        st.download_button(
-            label="📊 5. Cover Letter & Match Matrix (.pdf)",
-            data=st.session_state["cover_matrix_pdf"],
-            file_name=f"5_Cover_Letter_and_Match_Matrix.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-
-        with st.expander("🔍 View AI Tailored Dynamic Variables"):
-            st.write("**Identified Company:**", target_co)
-            st.write("**Identified Role:**", target_rl)
-            st.write("**Header Focus 1:**", tailored_data.get("header_focus_1"))
-            st.write("**Header Focus 2:**", tailored_data.get("header_focus_2"))
-            st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
-            st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
-            st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
-            st.write("**Match Matrix Rows Generated:**", len(cover_data.get("matrix_items", [])))
+                background: conic-gradient(#16A34A {score * 3.6
