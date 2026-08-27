@@ -13,7 +13,7 @@ from docx.oxml import parse_xml
 from google import genai
 from google.genai import types
 
-# ReportLab imports for 2-Page Cover Letter + Match Matrix PDF
+# ReportLab imports for Pixel-Perfect PDF Generation
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -107,17 +107,9 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME GENERATION ENGINE (LOCKED MASTER)
+# 3. WORD RESUME ENGINE (LOCKED)
 # ==============================================================================
-def create_master_resume_docx(tailored_data, highlight_changes=False):
-    doc = Document()
-    
-    for section in doc.sections:
-        section.top_margin = Inches(0.40)
-        section.bottom_margin = Inches(0.40)
-        section.left_margin = Inches(0.50)
-        section.right_margin = Inches(0.50)
-
+def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
     style.font.name = 'Calibri'
     style.font.size = Pt(10)
@@ -143,7 +135,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
                              r'</w:pBdr>')
             pPr.append(pBdr)
 
-    # 1. Header
+    # 1. Header Block
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_name.paragraph_format.space_before = Pt(0)
@@ -455,89 +447,85 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
             r_part.bold = True
             r_part.font.color.rgb = RGBColor(0x00, 0xB0, 0xF0)
 
+def create_master_resume_docx(tailored_data, highlight_changes=False):
+    doc = Document()
+    for section in doc.sections:
+        section.top_margin = Inches(0.40)
+        section.bottom_margin = Inches(0.40)
+        section.left_margin = Inches(0.50)
+        section.right_margin = Inches(0.50)
+    populate_resume_document(doc, tailored_data, highlight_changes)
     doc_io = io.BytesIO()
     doc.save(doc_io)
     doc_io.seek(0)
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. REPORTLAB PDF BUILDER (JUSTIFIED & PROPORTIONAL PADDING)
+# 4. REPORTLAB ELEMENTS GENERATOR (FOR COVER, RESUME & MATRIX)
 # ==============================================================================
-def create_cover_letter_match_matrix_pdf(cover_data):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        leftMargin=36,
-        rightMargin=36,
-        topMargin=36,
-        bottomMargin=36
-    )
-
+def get_pdf_styles():
     styles = getSampleStyleSheet()
-    
     title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12.5, leading=15.5, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER, spaceAfter=10)
     subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceBefore=8, spaceAfter=8)
     salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceAfter=8)
-    
     body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, spaceAfter=8)
-    
-    bullet_style = ParagraphStyle(
-        'Bullet', 
-        parent=styles['Normal'], 
-        fontName='Helvetica', 
-        fontSize=9.5, 
-        leading=13.5, 
-        textColor=colors.HexColor('#1F2937'), 
-        alignment=TA_JUSTIFY,
-        leftIndent=28, 
-        rightIndent=12, 
-        firstLineIndent=-14, 
-        spaceAfter=7
-    )
-    
+    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, leftIndent=28, rightIndent=12, firstLineIndent=-14, spaceAfter=7)
     sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceBefore=8)
     
     th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER)
     td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_LEFT)
     td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
+    
+    # Resume-specific PDF styles
+    r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=3)
+    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=4)
+    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=TA_CENTER, spaceAfter=6)
+    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, spaceBefore=4, spaceAfter=2)
+    r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=TA_JUSTIFY, spaceAfter=4)
+    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=10.5, alignment=TA_JUSTIFY, leftIndent=12, firstLineIndent=-8, spaceAfter=3)
+    col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=9.5, alignment=TA_LEFT)
 
-    story = []
+    return {
+        "title": title_style, "subject": subject_style, "salutation": salutation_style,
+        "body": body_style, "bullet": bullet_style, "sign": sign_style,
+        "th": th_style, "td_left": td_left, "td_right": td_right,
+        "r_name": r_name_style, "r_sub": r_sub_style, "r_contact": r_contact_style,
+        "r_h": r_h_style, "r_body": r_body_style, "r_bullet": r_bullet_style, "col_cell": col_cell_style
+    }
 
-    # ---------------- PAGE 1: COVER LETTER ----------------
-    story.append(Paragraph("COVER LETTER", title_style))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph(f"<b>Subject:</b> {cover_data.get('subject_line', 'Application for Target Role')}", subject_style))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph("Dear Hiring Team,", salutation_style))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph(cover_data.get("cover_para_1", ""), body_style))
-    story.append(Paragraph(cover_data.get("cover_para_2", ""), body_style))
-    story.append(Paragraph("<b>Key highlights of what I bring to this mandate include:</b>", body_style))
-
+def get_cover_letter_story(cover_data, st_dict):
+    story = [
+        Paragraph("COVER LETTER", st_dict["title"]),
+        Spacer(1, 4),
+        Paragraph(f"<b>Subject:</b> {cover_data.get('subject_line', 'Application for Target Role')}", st_dict["subject"]),
+        Spacer(1, 4),
+        Paragraph("Dear Hiring Team,", st_dict["salutation"]),
+        Spacer(1, 4),
+        Paragraph(cover_data.get("cover_para_1", ""), st_dict["body"]),
+        Paragraph(cover_data.get("cover_para_2", ""), st_dict["body"]),
+        Paragraph("<b>Key highlights of what I bring to this mandate include:</b>", st_dict["body"])
+    ]
     for b in cover_data.get("cover_bullets", []):
-        story.append(Paragraph(f"• &nbsp; {b}", bullet_style))
-
+        story.append(Paragraph(f"• &nbsp; {b}", st_dict["bullet"]))
     story.append(Spacer(1, 4))
-    story.append(Paragraph(cover_data.get("cover_para_closing", ""), body_style))
-    story.append(Paragraph("Sincerely,<br/><b>Madhusudhanan Janakarajan (Madhu)</b><br/>+971 50 654 7858 | sjrmadhu20@gmail.com", sign_style))
+    story.append(Paragraph(cover_data.get("cover_para_closing", ""), st_dict["body"]))
+    story.append(Paragraph("Sincerely,<br/><b>Madhusudhanan Janakarajan (Madhu)</b><br/>+971 50 654 7858 | sjrmadhu20@gmail.com", st_dict["sign"]))
+    return story
 
-    # ---------------- PAGE 2: MATCH MATRIX ----------------
-    story.append(PageBreak())
-    story.append(Paragraph("MATCH MATRIX", title_style))
-    story.append(Spacer(1, 8))
-
+def get_match_matrix_story(cover_data, st_dict):
+    story = [
+        Paragraph("MATCH MATRIX", st_dict["title"]),
+        Spacer(1, 8)
+    ]
     matrix_rows = [[
-        Paragraph("<b>Target Job Requirement / Focus Domain</b>", th_style),
-        Paragraph("<b>How I Match (Evidence & Track Record)</b>", th_style)
+        Paragraph("<b>Target Job Requirement / Focus Domain</b>", st_dict["th"]),
+        Paragraph("<b>How I Match (Evidence & Track Record)</b>", st_dict["th"])
     ]]
-
     for item in cover_data.get("matrix_items", []):
         matrix_rows.append([
-            Paragraph(f"<b>{item.get('requirement_title', '')}</b><br/><font color='#4B5563'>{item.get('requirement_desc', '')}</font>", td_left),
-            Paragraph(item.get('match_desc', ''), td_right)
+            Paragraph(f"<b>{item.get('requirement_title', '')}</b><br/><font color='#4B5563'>{item.get('requirement_desc', '')}</font>", st_dict["td_left"]),
+            Paragraph(item.get('match_desc', ''), st_dict["td_right"])
         ])
-
     matrix_table = Table(matrix_rows, colWidths=[2.5 * inch, 4.9 * inch])
     matrix_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
@@ -549,30 +537,127 @@ def create_cover_letter_match_matrix_pdf(cover_data):
         ('LEFTPADDING', (0, 0), (-1, -1), 7),
         ('RIGHTPADDING', (0, 0), (-1, -1), 7),
     ]))
-
     story.append(matrix_table)
+    return story
 
+def get_resume_story(tailored_data, st_dict):
+    story = []
+    # Header
+    story.append(Paragraph(MASTER_STATIC['name'], st_dict["r_name"]))
+    f1 = tailored_data.get("header_focus_1", "Commercial & Digital Transformation Director")
+    f2 = tailored_data.get("header_focus_2", "Enterprise Sales & Strategy Leader")
+    sub_line = f"{f1} | FMCG | GTM & Omnichannel Leader | {f2}"
+    story.append(Paragraph(sub_line, st_dict["r_sub"]))
+    c = MASTER_STATIC['contact']
+    contact_line = f"{c['location']} | {c['phone']} | {c['email']}<br/>{c['linkedin']} | Portfolio: {c['portfolio']}<br/><b>Visa Status:</b> {c['visas']}"
+    story.append(Paragraph(contact_line, st_dict["r_contact"]))
+    
+    # Exec Summary
+    story.append(Paragraph("<b>EXECUTIVE SUMMARY</b>", st_dict["r_h"]))
+    story.append(Paragraph(tailored_data.get("executive_summary", ""), st_dict["r_body"]))
+    
+    # Capabilities
+    story.append(Paragraph("<b>EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS</b>", st_dict["r_h"]))
+    for cap in tailored_data.get("capabilities", []):
+        story.append(Paragraph(f"• {cap}", st_dict["r_bullet"]))
+        
+    # Honors
+    story.append(Paragraph("<b>HONORS & RECOGNITION</b>", st_dict["r_h"]))
+    for h in MASTER_STATIC['honors']:
+        story.append(Paragraph(f"• {h}", st_dict["r_bullet"]))
+        
+    # Education & Languages
+    story.append(Paragraph("<b>EDUCATION</b>", st_dict["r_h"]))
+    for edu in MASTER_STATIC['education']:
+        story.append(Paragraph(f"• <b>{edu['degree']}</b> – {edu['details']}", st_dict["r_bullet"]))
+    story.append(Paragraph("<b>LANGUAGES & INTERESTS :</b>", st_dict["r_h"]))
+    story.append(Paragraph(MASTER_STATIC['languages'], st_dict["r_body"]))
+    story.append(Paragraph(MASTER_STATIC['interests'], st_dict["r_body"]))
+    
+    # Page 2 Boundary
+    story.append(PageBreak())
+    story.append(Paragraph("<b>PROFESSIONAL EXPERIENCE</b>", st_dict["r_h"]))
+    
+    # 3-Column Experience Summary Table in PDF
+    c1_txt = "<b>Britannia Industries Ltd | 2007–2011</b><br/><i>Regional Sales Head GCC & India</i><br/>• Owned $100M+ P&L across GCC & South India.<br/>• Directed 250+ distributor networks & 600+ sales staff.<br/>• Spearheaded Britannia's 1st SFA rollout (1,000+ users).<br/>• Delivered ~30% numeric distribution growth.<br/><br/><b>Airtel | Reliance | Tyco | 2001–2007</b><br/>• Frontline execution, journey planning & capability building.<br/>• Deployed SPIN selling & CRM/LMS infrastructure."
+    
+    conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, food, and non-food portfolios.")
+    c1_dyn = tailored_data.get("column_2_extra_bullet", "")
+    c2_txt = f"<b>Conektr Tech Global | 2016–2024</b><br/><i>CEO & Founder (Digital FMCG Distributor)</i><br/>• Founded UAE's 1st Digital FMCG Distributor serving 8,000+ retailers & 100+ brands.<br/>• {conektr_cat}<br/>• Owned full P&L, trade terms, warehousing & logistics.<br/>• Scaled annual GMV from zero to ~AED 50M (~$13.6M).<br/>• Cut coverage cost >50%, productivity up ~150%.<br/>• Raised ~$15M; executed M&A exit to Al Maya Group."
+    if c1_dyn:
+        c2_txt += f"<br/>• {c1_dyn}"
+        
+    c2_dyn = tailored_data.get("column_3_extra_bullet", "")
+    c3_txt = f"<b>TransCPG & FieldAssist | 2025–Present</b><br/><i>Transformation Advisor (Director)</i><br/>• Board Member guiding global RTM modernizations.<br/>• Advising CPG leaders on DMS/SFA, driving ~150% growth.<br/>• Built Bid2Bill AI/Voice-bot platform, cutting CAC ~40%.<br/><br/><b>Ivy Mobility Pte Ltd | 2011–2016</b><br/><i>Business Head – MEA</i><br/>• Built MEA setup into 2nd largest setup ($10M+ pipeline).<br/>• Won 22 logos: P&G, Nestlé, GSK, Coca-Cola, BAT.<br/>• Led P&G distributor mobile SFA in Kenya.<br/>• Deployed Cloud SFA to 3,000+ users."
+    if c2_dyn:
+        c3_txt += f"<br/>• {c2_dyn}"
+        
+    exp_table_data = [
+        [Paragraph("<b>Traditional FMCG Operator</b>", st_dict["th"]), Paragraph("<b>Digital FMCG Distribution</b>", st_dict["th"]), Paragraph("<b>Distribution Transformation</b>", st_dict["th"])],
+        [Paragraph(c1_txt, st_dict["col_cell"]), Paragraph(c2_txt, st_dict["col_cell"]), Paragraph(c3_txt, st_dict["col_cell"])]
+    ]
+    exp_table = Table(exp_table_data, colWidths=[2.46 * inch, 2.46 * inch, 2.46 * inch])
+    exp_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    story.append(exp_table)
+    
+    # Tech Stack & Why Hire Me
+    story.append(Spacer(1, 4))
+    story.append(Paragraph("<b>TECHNOLOGY STACK & DIGITAL ARCHITECTURE:</b>", st_dict["r_h"]))
+    for category, stack in MASTER_STATIC['tech_stack'].items():
+        story.append(Paragraph(f"• <b>{category}:</b> {stack}", st_dict["r_bullet"]))
+    story.append(Spacer(1, 3))
+    why_text = "<b><u>WHY HIRE ME:</u></b> A rare profile combining Core FMCG Operator + Digital FMCG Disruption pioneer + Enterprise Transformations (P&G, Coca-cola, GSK) + 10+ International Markets (GCC, India, Africa, Asia) + Successful Entrepreneurial $15M M&A Exit + Recipient of Global recognition for FMCG Contribution: O1A from USA & Golden Visa from UAE."
+    story.append(Paragraph(why_text, st_dict["r_body"]))
+    return story
+
+# Standalone PDF Builders
+def create_cover_letter_match_matrix_pdf(cover_data):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=36, bottomMargin=36)
+    st_dict = get_pdf_styles()
+    story = get_cover_letter_story(cover_data, st_dict) + [PageBreak()] + get_match_matrix_story(cover_data, st_dict)
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+def create_resume_pdf(tailored_data):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=28, bottomMargin=28)
+    st_dict = get_pdf_styles()
+    story = get_resume_story(tailored_data, st_dict)
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+# File 1: Combined PDF (Cover Letter -> 2-Page Resume -> Match Matrix)
+def create_combined_application_pdf(cover_data, tailored_data):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=30, bottomMargin=30)
+    st_dict = get_pdf_styles()
+    story = (
+        get_cover_letter_story(cover_data, st_dict) +
+        [PageBreak()] +
+        get_resume_story(tailored_data, st_dict) +
+        [PageBreak()] +
+        get_match_matrix_story(cover_data, st_dict)
+    )
     doc.build(story)
     buffer.seek(0)
     return buffer.getvalue()
 
 # ==============================================================================
-# 5. WORD COVER LETTER & MATCH MATRIX BUILDER (.DOCX)
+# 5. WORD COVER, MATRIX & COMBINED PACK BUILDER (.DOCX)
 # ==============================================================================
-def create_cover_letter_match_matrix_docx(cover_data):
-    doc = Document()
-    for section in doc.sections:
-        section.top_margin = Inches(0.5)
-        section.bottom_margin = Inches(0.5)
-        section.left_margin = Inches(0.5)
-        section.right_margin = Inches(0.5)
-
-    style = doc.styles['Normal']
-    style.font.name = 'Calibri'
-    style.font.size = Pt(11)
-    style.font.color.rgb = RGBColor(0x1F, 0x29, 0x37)
-
-    # ---------------- PAGE 1: COVER LETTER ----------------
+def populate_cover_letter_docx_page(doc, cover_data):
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_title.paragraph_format.space_after = Pt(10)
@@ -645,8 +730,7 @@ def create_cover_letter_match_matrix_docx(cover_data):
     r_s2 = p_sign.add_run("+971 50 654 7858 | sjrmadhu20@gmail.com")
     r_s2.font.name = 'Calibri'
 
-    # ---------------- PAGE 2: MATCH MATRIX ----------------
-    doc.add_page_break()
+def populate_match_matrix_docx_page(doc, cover_data):
     p_mtitle = doc.add_paragraph()
     p_mtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_mtitle.paragraph_format.space_after = Pt(10)
@@ -714,18 +798,53 @@ def create_cover_letter_match_matrix_docx(cover_data):
     )
     table._tbl.tblPr.append(tblBorders)
 
+def create_cover_letter_match_matrix_docx(cover_data):
+    doc = Document()
+    for section in doc.sections:
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
+    populate_cover_letter_docx_page(doc, cover_data)
+    doc.add_page_break()
+    populate_match_matrix_docx_page(doc, cover_data)
     doc_io = io.BytesIO()
     doc.save(doc_io)
     doc_io.seek(0)
     return doc_io.getvalue()
 
-def create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx):
+# File 2: Combined Word Doc (Cover Letter -> 2-Page Resume -> Match Matrix)
+def create_combined_application_docx(cover_data, tailored_data):
+    doc = Document()
+    for section in doc.sections:
+        section.top_margin = Inches(0.45)
+        section.bottom_margin = Inches(0.45)
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
+    
+    # 1. Cover Letter Page
+    populate_cover_letter_docx_page(doc, cover_data)
+    doc.add_page_break()
+    # 2. Resume (2 Pages)
+    populate_resume_document(doc, tailored_data, highlight_changes=False)
+    doc.add_page_break()
+    # 3. Match Matrix Page
+    populate_match_matrix_docx_page(doc, cover_data)
+    
+    doc_io = io.BytesIO()
+    doc.save(doc_io)
+    doc_io.seek(0)
+    return doc_io.getvalue()
+
+# Master ZIP Packager (Exact 5-File Specification)
+def create_master_application_zip(comb_pdf, comb_docx, review_docx, resume_pdf, cover_matrix_pdf):
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.writestr("1_Madhusudhanan_Janakarajan_Resume_Clean.docx", clean_docx)
-        zip_file.writestr("2_Madhusudhanan_Janakarajan_Resume_Highlighted_Review.docx", review_docx)
-        zip_file.writestr("3_Cover_Letter_and_Match_Matrix.pdf", matrix_pdf)
-        zip_file.writestr("4_Cover_Letter_and_Match_Matrix.docx", matrix_docx)
+        zip_file.writestr("1_Complete_Application_Set_Cover_Resume_Matrix.pdf", comb_pdf)
+        zip_file.writestr("2_Complete_Application_Set_Cover_Resume_Matrix.docx", comb_docx)
+        zip_file.writestr("3_Madhusudhanan_Janakarajan_Resume_Highlighted_Review.docx", review_docx)
+        zip_file.writestr("4_Madhusudhanan_Janakarajan_Resume_Clean.pdf", resume_pdf)
+        zip_file.writestr("5_Cover_Letter_and_Match_Matrix.pdf", cover_matrix_pdf)
     zip_buffer.seek(0)
     return zip_buffer.getvalue()
 
@@ -733,7 +852,7 @@ def create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx
 # 6. STREAMLIT FRONTEND & HIGH-SPEED ENGINE CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("Real-Time AI Tailoring • Exact Master Resume Typography • 2-Page Cover & Matrix PDF • ATS Scoring")
+st.caption("Real-Time AI Tailoring • Multi-Format Suite • 5-Asset Master Bundle • ATS Scoring")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -942,7 +1061,6 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
-                # Prioritize high-speed models directly
                 model_candidates = [
                     "gemini-2.5-flash",
                     "gemini-2.0-flash",
@@ -952,7 +1070,6 @@ if generate_btn:
                 client = genai.Client(api_key=api_key)
                 for model_candidate in model_candidates:
                     try:
-                        # Disable thinking overhead to generate structured JSON instantly
                         response = client.models.generate_content(
                             model=model_candidate,
                             contents=prompt,
@@ -987,25 +1104,36 @@ if generate_btn:
                         continue
 
                 if tailored_data:
+                    # 1. Clean & Highlighted Resumes (.docx & .pdf)
                     clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
                     review_docx = create_master_resume_docx(tailored_data, highlight_changes=True)
-                    matrix_pdf = create_cover_letter_match_matrix_pdf(cover_data)
-                    matrix_docx = create_cover_letter_match_matrix_docx(cover_data)
-                    zip_pack = create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx)
+                    resume_pdf = create_resume_pdf(tailored_data)
+                    
+                    # 2. Cover Letter & Match Matrix (.pdf & .docx)
+                    cover_matrix_pdf = create_cover_letter_match_matrix_pdf(cover_data)
+                    cover_matrix_docx = create_cover_letter_match_matrix_docx(cover_data)
+                    
+                    # 3. Complete Combined Packs (Cover -> Resume -> Matrix)
+                    comb_pdf = create_combined_application_pdf(cover_data, tailored_data)
+                    comb_docx = create_combined_application_docx(cover_data, tailored_data)
+                    
+                    # 4. Master 5-Asset ZIP Bundle
+                    master_zip = create_master_application_zip(comb_pdf, comb_docx, review_docx, resume_pdf, cover_matrix_pdf)
 
                     st.session_state["tailored_data"] = tailored_data
                     st.session_state["cover_data"] = cover_data
-                    st.session_state["clean_docx"] = clean_docx
+                    st.session_state["comb_pdf"] = comb_pdf
+                    st.session_state["comb_docx"] = comb_docx
                     st.session_state["review_docx"] = review_docx
-                    st.session_state["matrix_pdf"] = matrix_pdf
-                    st.session_state["matrix_docx"] = matrix_docx
-                    st.session_state["zip_pack"] = zip_pack
+                    st.session_state["resume_pdf"] = resume_pdf
+                    st.session_state["cover_matrix_pdf"] = cover_matrix_pdf
+                    st.session_state["master_zip"] = master_zip
                     st.session_state["has_results"] = True
                 else:
                     st.error(f"Generation Error: {last_error}. Please check your API key and network permissions.")
 
 # ==============================================================================
-# 7. PERSISTENT DISPLAY & DOWNLOAD AREA
+# 7. PERSISTENT DISPLAY & MULTI-FILE DOWNLOAD AREA
 # ==============================================================================
 if st.session_state.get("has_results", False):
     with col2:
@@ -1058,53 +1186,64 @@ if st.session_state.get("has_results", False):
         </div>
         """, unsafe_allow_html=True)
 
+        # 1-Click Master ZIP (Contains all 5 exact requested files)
         st.download_button(
-            label=f"📦 Download Complete Application Pack (.ZIP) — {target_co}",
-            data=st.session_state["zip_pack"],
-            file_name=f"Madhusudhanan_Janakarajan_{target_co.replace(' ', '_')}_Application_Pack.zip",
+            label=f"📦 Download Complete Application Bundle (.ZIP) — 5 Files",
+            data=st.session_state["master_zip"],
+            file_name=f"Madhusudhanan_Janakarajan_{target_co.replace(' ', '_')}_Full_Application_Bundle.zip",
             mime="application/zip",
             type="primary",
             use_container_width=True
         )
 
         st.markdown("---")
-        st.write("📄 **Individual Document Downloads:**")
+        st.write("📄 **Individual Application Files:**")
 
+        # Row 1: Complete Combined Sets
         col_b1, col_b2 = st.columns(2)
         with col_b1:
             st.download_button(
-                label="📥 Clean ATS Resume (.docx)",
-                data=st.session_state["clean_docx"],
-                file_name=f"Madhusudhanan_Janakarajan_Resume_{target_co.replace(' ', '_')}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                label="📑 1. Combined Application Set (.pdf)",
+                data=st.session_state["comb_pdf"],
+                file_name=f"1_Complete_Application_Set_Cover_Resume_Matrix.pdf",
+                mime="application/pdf",
                 use_container_width=True
             )
         with col_b2:
             st.download_button(
-                label="🟡 Highlighted Review Resume (.docx)",
-                data=st.session_state["review_docx"],
-                file_name=f"Madhusudhanan_Janakarajan_Resume_Review_{target_co.replace(' ', '_')}.docx",
+                label="📝 2. Combined Application Set (.docx)",
+                data=st.session_state["comb_docx"],
+                file_name=f"2_Complete_Application_Set_Cover_Resume_Matrix.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
 
+        # Row 2: Review Resume & Individual PDFs
         col_b3, col_b4 = st.columns(2)
         with col_b3:
             st.download_button(
-                label="📄 Cover & Matrix (2-Page PDF)",
-                data=st.session_state["matrix_pdf"],
-                file_name=f"Madhusudhanan_Janakarajan_CoverLetter_MatchMatrix_{target_co.replace(' ', '_')}.pdf",
-                mime="application/pdf",
+                label="🟡 3. Highlighted Review Resume (.docx)",
+                data=st.session_state["review_docx"],
+                file_name=f"3_Madhusudhanan_Janakarajan_Resume_Review.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
         with col_b4:
             st.download_button(
-                label="📝 Cover & Matrix (Word .docx)",
-                data=st.session_state["matrix_docx"],
-                file_name=f"Madhusudhanan_Janakarajan_CoverLetter_MatchMatrix_{target_co.replace(' ', '_')}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                label="📄 4. Clean ATS Resume (.pdf)",
+                data=st.session_state["resume_pdf"],
+                file_name=f"4_Madhusudhanan_Janakarajan_Resume_Clean.pdf",
+                mime="application/pdf",
                 use_container_width=True
             )
+
+        st.download_button(
+            label="📊 5. Cover Letter & Match Matrix (.pdf)",
+            data=st.session_state["cover_matrix_pdf"],
+            file_name=f"5_Cover_Letter_and_Match_Matrix.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 
         with st.expander("🔍 View AI Tailored Dynamic Variables"):
             st.write("**Identified Company:**", target_co)
