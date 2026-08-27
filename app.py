@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import io
 import os
+import zipfile
 import docx
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
@@ -18,7 +19,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-st.set_page_config(page_title="Executive ATS Resume Tailor v2", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="Executive ATS Application Engine", page_icon="🎯", layout="wide")
 
 # ==============================================================================
 # 1. API CONFIGURATION
@@ -454,10 +455,10 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     doc_io = io.BytesIO()
     doc.save(doc_io)
     doc_io.seek(0)
-    return doc_io
+    return doc_io.getvalue()
 
 # ==============================================================================
-# 4. REPORTLAB PDF ENGINE (STRICT 2-PAGE COVER LETTER + MATCH MATRIX)
+# 4. REPORTLAB PDF BUILDER (2-PAGE COVER LETTER + MATCH MATRIX)
 # ==============================================================================
 def create_cover_letter_match_matrix_pdf(cover_data):
     buffer = io.BytesIO()
@@ -472,21 +473,21 @@ def create_cover_letter_match_matrix_pdf(cover_data):
 
     styles = getSampleStyleSheet()
     
-    title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#002B49'), alignment=1)
-    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.HexColor('#111827'), spaceBefore=8, spaceAfter=8)
-    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.2, textColor=colors.HexColor('#1F2937'), alignment=4, spaceAfter=7)
-    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=12.5, textColor=colors.HexColor('#1F2937'), leftIndent=12, firstLineIndent=-12, spaceAfter=5)
-    sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#111827'), spaceBefore=8)
+    title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#002B49'), alignment=1)
+    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, textColor=colors.HexColor('#111827'), spaceBefore=6, spaceAfter=6)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=12.5, textColor=colors.HexColor('#1F2937'), alignment=4, spaceAfter=6)
+    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.0, textColor=colors.HexColor('#1F2937'), leftIndent=12, firstLineIndent=-12, spaceAfter=4)
+    sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.2, leading=12.5, textColor=colors.HexColor('#111827'), spaceBefore=6)
     
-    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#002B49'), alignment=0)
-    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#1F2937'))
-    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#1F2937'))
+    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.0, leading=11.5, textColor=colors.HexColor('#002B49'), alignment=0)
+    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=10.5, textColor=colors.HexColor('#1F2937'))
+    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=10.5, textColor=colors.HexColor('#1F2937'))
 
     story = []
 
-    # ---------------- PAGE 1: COVER LETTER ----------------
+    # Page 1: Cover Letter
     story.append(Paragraph("EXECUTIVE COVER LETTER", title_style))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
     story.append(Paragraph(f"<b>Subject:</b> {cover_data.get('subject_line', 'Application for Executive Role')}", subject_style))
     story.append(Paragraph("Dear Hiring Team,", body_style))
     story.append(Paragraph(cover_data.get("cover_para_1", ""), body_style))
@@ -496,14 +497,14 @@ def create_cover_letter_match_matrix_pdf(cover_data):
     for b in cover_data.get("cover_bullets", []):
         story.append(Paragraph(f"• {b}", bullet_style))
 
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     story.append(Paragraph(cover_data.get("cover_para_closing", ""), body_style))
     story.append(Paragraph("Sincerely,<br/><b>Madhusudhanan Janakarajan (Madhu)</b><br/>+971 50 654 7858 | sjrmadhu20@gmail.com", sign_style))
 
-    # ---------------- PAGE 2: MATCH MATRIX ----------------
+    # Page 2: Match Matrix
     story.append(PageBreak())
     story.append(Paragraph(f"STRATEGIC MATCH MATRIX — {cover_data.get('target_company', 'TARGET ROLE').upper()}", title_style))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
 
     matrix_rows = [[
         Paragraph("<b>Job Requirement / Key Responsibility</b>", th_style),
@@ -522,8 +523,8 @@ def create_cover_letter_match_matrix_pdf(cover_data):
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
         ('LEFTPADDING', (0, 0), (-1, -1), 5),
         ('RIGHTPADDING', (0, 0), (-1, -1), 5),
     ]))
@@ -532,13 +533,122 @@ def create_cover_letter_match_matrix_pdf(cover_data):
 
     doc.build(story)
     buffer.seek(0)
-    return buffer
+    return buffer.getvalue()
 
 # ==============================================================================
-# 5. STREAMLIT INTERFACE & SPEECH-TO-TEXT JAVASCRIPT ENGINE
+# 5. WORD COVER LETTER & MATCH MATRIX BUILDER (.DOCX)
 # ==============================================================================
-st.title("🎯 Executive ATS Resume & Match Engine")
-st.caption("Resume Builder • Dynamic Subtitles • Voice Dictation • ATS Match Score • 2-Page Cover & Matrix PDF")
+def create_cover_letter_match_matrix_docx(cover_data):
+    doc = Document()
+    for section in doc.sections:
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
+
+    style = doc.styles['Normal']
+    style.font.name = 'Calibri'
+    style.font.size = Pt(10)
+
+    # Page 1: Cover Letter
+    p_title = doc.add_paragraph()
+    p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_t = p_title.add_run("EXECUTIVE COVER LETTER")
+    r_t.bold = True
+    r_t.font.size = Pt(14)
+
+    p_sub = doc.add_paragraph()
+    r_sb = p_sub.add_run(f"Subject: {cover_data.get('subject_line', '')}")
+    r_sb.bold = True
+
+    doc.add_paragraph("Dear Hiring Team,")
+    doc.add_paragraph(cover_data.get("cover_para_1", ""))
+    doc.add_paragraph(cover_data.get("cover_para_2", ""))
+
+    p_kh = doc.add_paragraph()
+    r_kh = p_kh.add_run("Key highlights of what I bring to this mandate include:")
+    r_kh.bold = True
+
+    for b in cover_data.get("cover_bullets", []):
+        bp = doc.add_paragraph(style='List Bullet')
+        bp.paragraph_format.space_after = Pt(2)
+        bp.add_run(b)
+
+    doc.add_paragraph(cover_data.get("cover_para_closing", ""))
+    
+    p_sign = doc.add_paragraph()
+    p_sign.add_run("Sincerely,\n").bold = False
+    p_sign.add_run("Madhusudhanan Janakarajan (Madhu)\n").bold = True
+    p_sign.add_run("+971 50 654 7858 | sjrmadhu20@gmail.com")
+
+    # Page 2: Match Matrix
+    doc.add_page_break()
+    p_mtitle = doc.add_paragraph()
+    p_mtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_mt = p_mtitle.add_run(f"STRATEGIC MATCH MATRIX — {cover_data.get('target_company', '').upper()}")
+    r_mt.bold = True
+    r_mt.font.size = Pt(14)
+
+    matrix_items = cover_data.get("matrix_items", [])
+    table = doc.add_table(rows=len(matrix_items) + 1, cols=2)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    table.rows[0].cells[0].width = Inches(2.5)
+    table.rows[0].cells[1].width = Inches(5.0)
+
+    # Header Row
+    cell_0 = table.rows[0].cells[0]
+    cell_1 = table.rows[0].cells[1]
+    cell_0.paragraphs[0].add_run("Job Requirement / Key Responsibility").bold = True
+    cell_1.paragraphs[0].add_run("How I Match (Evidence & Track Record)").bold = True
+
+    for idx, item in enumerate(matrix_items):
+        row_cells = table.rows[idx + 1].cells
+        row_cells[0].width = Inches(2.5)
+        row_cells[1].width = Inches(5.0)
+        
+        p0 = row_cells[0].paragraphs[0]
+        r_rt = p0.add_run(item.get('requirement_title', '') + "\n")
+        r_rt.bold = True
+        r_rd = p0.add_run(item.get('requirement_desc', ''))
+        r_rd.font.size = Pt(9)
+        
+        p1 = row_cells[1].paragraphs[0]
+        r_mt = p1.add_run(item.get('match_title', '') + ": ")
+        r_mt.bold = True
+        p1.add_run(item.get('match_desc', ''))
+
+    tblBorders = parse_xml(
+        r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        r'<w:top w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
+        r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
+        r'</w:tblBorders>'
+    )
+    table._tbl.tblPr.append(tblBorders)
+
+    doc_io = io.BytesIO()
+    doc.save(doc_io)
+    doc_io.seek(0)
+    return doc_io.getvalue()
+
+# Helper to build ZIP package
+def create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx):
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr("1_Madhusudhanan_Janakarajan_Resume_Clean.docx", clean_docx)
+        zip_file.writestr("2_Madhusudhanan_Janakarajan_Resume_Highlighted_Review.docx", review_docx)
+        zip_file.writestr("3_Cover_Letter_and_Match_Matrix.pdf", matrix_pdf)
+        zip_file.writestr("4_Cover_Letter_and_Match_Matrix.docx", matrix_docx)
+    zip_buffer.seek(0)
+    return zip_buffer.getvalue()
+
+# ==============================================================================
+# 6. STREAMLIT FRONTEND & PERSISTENT SESSION STATE
+# ==============================================================================
+st.title("🎯 Executive ATS Resume & Application Engine")
+st.caption("Resume Architect • Dynamic Subtitles • Interactive Voice Notes • ATS Match Score • All-in-One Package")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -547,8 +657,8 @@ with st.sidebar:
     else:
         st.warning("🟠 AI Engine: Inactive (Set GEMINI_API_KEY in Secrets)")
     st.markdown("---")
-    st.write("📂 **Outputs Included:**")
-    st.caption("1. Clean ATS Resume (.docx)\n2. Highlighted Review (.docx)\n3. 2-Page Cover Letter & Match Matrix (.pdf)\n4. Radial ATS Alignment Score")
+    st.write("📂 **Package Contents:**")
+    st.caption("1. Clean ATS Resume (.docx)\n2. Highlighted Review (.docx)\n3. 2-Page Cover & Matrix (.pdf)\n4. Cover & Matrix (.docx)\n5. Complete .ZIP Bundle")
 
 col1, col2 = st.columns([1.1, 0.9])
 
@@ -558,24 +668,24 @@ with col1:
 
     st.markdown("##### Special Instructions & Context (Optional)")
     
-    # SPEECH-TO-TEXT HTML/JS COMPONENT FOR BROWSER MIC DICTATION
+    # SPEECH-TO-TEXT WITH PERSISTENT LIVE SYNC
     st.components.v1.html(
         """
-        <div style="font-family: sans-serif; margin-bottom: 8px;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin-bottom: 6px;">
             <button id="micBtn" onclick="toggleDictation()" style="
                 background-color: #2563EB;
                 color: white;
                 border: none;
-                padding: 6px 12px;
+                padding: 7px 14px;
                 font-size: 13px;
                 font-weight: 600;
                 border-radius: 6px;
                 cursor: pointer;
-                display: flex;
+                display: inline-flex;
                 align-items: center;
                 gap: 6px;
             ">🎙️ Click to Speak Instructions</button>
-            <span id="status" style="font-size: 12px; color: #4B5563; margin-left: 8px;"></span>
+            <span id="status" style="font-size: 12px; color: #4B5563; margin-left: 10px; font-weight: 500;"></span>
         </div>
         <script>
             var recognizing = false;
@@ -589,9 +699,9 @@ with col1:
 
                 recognition.onstart = function() {
                     recognizing = true;
-                    document.getElementById('micBtn').innerText = '🔴 Listening... (Click to Stop)';
+                    document.getElementById('micBtn').innerText = '🔴 Recording Voice... (Click to Finish)';
                     document.getElementById('micBtn').style.backgroundColor = '#DC2626';
-                    document.getElementById('status').innerText = 'Speak now...';
+                    document.getElementById('status').innerText = 'Listening... Speak naturally.';
                 };
 
                 recognition.onresult = function(event) {
@@ -601,13 +711,15 @@ with col1:
                     }
                     var textAreas = window.parent.document.querySelectorAll('textarea');
                     if (textAreas.length > 1) {
-                        textAreas[1].value = (textAreas[1].value + ' ' + transcript).trim();
-                        textAreas[1].dispatchEvent(new Event('input', { bubbles: true }));
+                        var target = textAreas[1];
+                        var existing = target.value ? target.value.trim() + ' ' : '';
+                        target.value = existing + transcript.trim();
+                        target.dispatchEvent(new Event('input', { bubbles: true }));
                     }
                 };
 
                 recognition.onerror = function(event) {
-                    document.getElementById('status').innerText = 'Mic error: ' + event.error;
+                    document.getElementById('status').innerText = 'Mic notice: ' + event.error;
                     stopDictation();
                 };
 
@@ -615,7 +727,7 @@ with col1:
                     stopDictation();
                 };
             } else {
-                document.getElementById('status').innerText = 'Speech recognition not supported in this browser.';
+                document.getElementById('status').innerText = 'Speech recognition not supported in browser.';
             }
 
             function toggleDictation() {
@@ -631,7 +743,7 @@ with col1:
                 recognizing = false;
                 document.getElementById('micBtn').innerText = '🎙️ Click to Speak Instructions';
                 document.getElementById('micBtn').style.backgroundColor = '#2563EB';
-                document.getElementById('status').innerText = '';
+                document.getElementById('status').innerText = 'Notes added. You can click inside the box to edit or type more.';
             }
         </script>
         """,
@@ -641,20 +753,18 @@ with col1:
     special_instructions = st.text_area(
         "Voice or Typed Notes:",
         height=100,
-        placeholder="E.g., Emphasize IT & Digital Transformation over commercial leadership, note recent scoping discussions with the hiring team...",
+        placeholder="Click the mic above or type instructions here (e.g., Emphasize IT transformation, note recent scoping sessions...)",
         label_visibility="collapsed"
     )
     
-    generate_btn = st.button("🚀 Generate Tailored Resumes & Cover Matrix", type="primary")
+    generate_btn = st.button("🚀 Generate Full Tailored Application Pack", type="primary")
 
 if generate_btn:
     if not job_desc:
         st.warning("Please paste a Job Description first.")
     else:
         with col2:
-            st.subheader("2. AI Analysis & Tailored Documents")
-            with st.spinner("Synthesizing JD, Alignment Score & Strategic PDF Assets..."):
-                
+            with st.spinner("Synthesizing JD, Alignment Metrics & Tailoring Documents..."):
                 tailored_data = None
                 cover_data = None
                 
@@ -688,7 +798,7 @@ if generate_btn:
                        - "target_company": Company name identified from the JD.
                        - "target_role": Role title from the JD.
 
-                    7. COVER LETTER & STRATEGIC MATCH MATRIX (FOR EXACT 2-PAGE REPORTLAB PDF):
+                    7. COVER LETTER & STRATEGIC MATCH MATRIX:
                        - "subject_line": "Application for [Role Title] - [Company Name]"
                        - "cover_para_1": Authoritative opening highlighting 23+ years combining FMCG commercial leadership and enterprise digital development.
                        - "cover_para_2": Immediate alignment with target company's current digital journey, operational context, and RTM challenges.
@@ -701,11 +811,11 @@ if generate_btn:
                        - "matrix_items": Array of EXACTLY 6 rows matching the reference layout:
                          [
                            {{
-                             "requirement_title": "Requirement category (e.g. Sales & IT Convergence / Commercial Credibility)",
+                             "requirement_title": "Requirement category",
                              "requirement_desc": "Short description of JD requirement",
                              "match_title": "Candidate core pillar",
-                             "match_desc": "Specific quantified evidence ($100M+ P&L, SFA rollouts, etc.)"
-                           }}, ...
+                             "match_desc": "Specific quantified evidence"
+                           }}
                          ]
 
                     INPUT JOB DESCRIPTION:
@@ -763,7 +873,6 @@ if generate_btn:
                         except Exception:
                             continue
 
-                # Fallback data if API key is missing or calls fail
                 if not tailored_data:
                     tailored_data = {
                         "header_focus_1": "IT & Digital Transformation Director",
@@ -835,89 +944,123 @@ if generate_btn:
                         ]
                     }
 
-                docx_clean = create_master_resume_docx(tailored_data, highlight_changes=False)
-                docx_highlighted = create_master_resume_docx(tailored_data, highlight_changes=True)
-                pdf_cover_matrix = create_cover_letter_match_matrix_pdf(cover_data)
+                clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
+                review_docx = create_master_resume_docx(tailored_data, highlight_changes=True)
+                matrix_pdf = create_cover_letter_match_matrix_pdf(cover_data)
+                matrix_docx = create_cover_letter_match_matrix_docx(cover_data)
+                zip_pack = create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx)
 
-                # ==========================================================
-                # ATS MATCH SCORE VISUAL DISPLAY
-                # ==========================================================
-                score = tailored_data.get("ats_match_score", 94)
-                
-                st.markdown(f"""
+                # Store all generated assets in session state to persist across clicks
+                st.session_state["tailored_data"] = tailored_data
+                st.session_state["clean_docx"] = clean_docx
+                st.session_state["review_docx"] = review_docx
+                st.session_state["matrix_pdf"] = matrix_pdf
+                st.session_state["matrix_docx"] = matrix_docx
+                st.session_state["zip_pack"] = zip_pack
+                st.session_state["has_results"] = True
+
+# Display Persistent Output Section
+if st.session_state.get("has_results", False):
+    with col2:
+        st.subheader("2. Tailored Application Assets Ready")
+        
+        tailored_data = st.session_state["tailored_data"]
+        score = tailored_data.get("ats_match_score", 94)
+
+        # ATS Match Score Display
+        st.markdown(f"""
+        <div style="
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        ">
+            <div style="
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: conic-gradient(#16A34A {score * 3.6}deg, #E5E7EB 0deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">
                 <div style="
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 50%;
+                    background: white;
                     display: flex;
                     align-items: center;
-                    gap: 18px;
-                    padding: 12px 18px;
-                    background: #F0FDF4;
-                    border: 1px solid #BBF7D0;
-                    border-radius: 10px;
-                    margin-bottom: 15px;
-                ">
-                    <div style="
-                        width: 58px;
-                        height: 58px;
-                        border-radius: 50%;
-                        background: conic-gradient(#16A34A {score * 3.6}deg, #E5E7EB 0deg);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    ">
-                        <div style="
-                            width: 44px;
-                            height: 44px;
-                            border-radius: 50%;
-                            background: white;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-weight: bold;
-                            color: #16A34A;
-                            font-size: 15px;
-                        ">{score}%</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: 700; font-size: 15px; color: #166534;">Target JD Alignment Score: {score}/100</div>
-                        <div style="font-size: 12.5px; color: #15803D;">High Match: Experience & Leadership Scope directly align with JD competencies.</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    justify-content: center;
+                    font-weight: bold;
+                    color: #16A34A;
+                    font-size: 14px;
+                ">{score}%</div>
+            </div>
+            <div>
+                <div style="font-weight: 700; font-size: 14.5px; color: #166534;">Target JD Alignment Score: {score}/100</div>
+                <div style="font-size: 12px; color: #15803D;">High Match: Experience & Leadership Scope directly align with JD competencies.</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-                # ==========================================================
-                # DOWNLOAD BUTTONS
-                # ==========================================================
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    st.download_button(
-                        label="📥 Download Clean ATS Resume (.docx)",
-                        data=docx_clean,
-                        file_name="Madhusudhanan_Janakarajan_Resume_Clean.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
-                with col_btn2:
-                    st.download_button(
-                        label="🟡 Download Highlighted Review (.docx)",
-                        data=docx_highlighted,
-                        file_name="Madhusudhanan_Janakarajan_Resume_Highlighted.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
+        # 1-Click Master Download
+        st.download_button(
+            label="📦 Download Complete Application Pack (.ZIP)",
+            data=st.session_state["zip_pack"],
+            file_name="Madhusudhanan_Janakarajan_Executive_Application_Pack.zip",
+            mime="application/zip",
+            type="primary",
+            use_container_width=True
+        )
 
-                st.download_button(
-                    label="📄 Download Cover Letter & Match Matrix (2-Page PDF)",
-                    data=pdf_cover_matrix,
-                    file_name="Madhusudhanan_Janakarajan_CoverLetter_MatchMatrix.pdf",
-                    mime="application/pdf",
-                    type="primary",
-                    use_container_width=True
-                )
+        st.markdown("---")
+        st.write("📄 **Individual Document Downloads:**")
 
-                with st.expander("🔍 View AI Tailored Variable Breakdown"):
-                    st.write("**Header Variable 1:**", tailored_data.get("header_focus_1"))
-                    st.write("**Header Variable 2:**", tailored_data.get("header_focus_2"))
-                    st.write("**Executive Summary (135-150 Words):**", tailored_data.get("executive_summary"))
-                    st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
-                    st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
-                    st.write("**Conektr Category Bullet:**", tailored_data.get("conektr_category_bullet"))
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            st.download_button(
+                label="📥 Clean ATS Resume (.docx)",
+                data=st.session_state["clean_docx"],
+                file_name="Madhusudhanan_Janakarajan_Resume_Clean.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True
+            )
+        with col_b2:
+            st.download_button(
+                label="🟡 Highlighted Review Resume (.docx)",
+                data=st.session_state["review_docx"],
+                file_name="Madhusudhanan_Janakarajan_Resume_Highlighted.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True
+            )
+
+        col_b3, col_b4 = st.columns(2)
+        with col_b3:
+            st.download_button(
+                label="📄 Cover & Matrix (2-Page PDF)",
+                data=st.session_state["matrix_pdf"],
+                file_name="Madhusudhanan_Janakarajan_CoverLetter_MatchMatrix.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        with col_b4:
+            st.download_button(
+                label="📝 Cover & Matrix (Word .docx)",
+                data=st.session_state["matrix_docx"],
+                file_name="Madhusudhanan_Janakarajan_CoverLetter_MatchMatrix.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True
+            )
+
+        with st.expander("🔍 View AI Tailored Variable Breakdown"):
+            st.write("**Header Variable 1:**", tailored_data.get("header_focus_1"))
+            st.write("**Header Variable 2:**", tailored_data.get("header_focus_2"))
+            st.write("**Executive Summary (135-150 Words):**", tailored_data.get("executive_summary"))
+            st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
+            st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
+            st.write("**Conektr Category Bullet:**", tailored_data.get("conektr_category_bullet"))
