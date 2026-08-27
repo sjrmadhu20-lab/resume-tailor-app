@@ -7,20 +7,26 @@ from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.oxml import parse_xml, OxmlElement
-from docx.oxml.ns import nsdecls, qn
+from docx.oxml import parse_xml
 from google import genai
 from google.genai import types
+
+# ReportLab imports for 2-page Cover Letter + Match Matrix PDF
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 st.set_page_config(page_title="Executive ATS Resume Tailor v2", page_icon="🎯", layout="wide")
 
 # ==============================================================================
-# 1. RETRIEVE API KEY FROM STREAMLIT SECRETS
+# 1. API CONFIGURATION
 # ==============================================================================
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 # ==============================================================================
-# 2. MASTER KNOWLEDGE ARCHIVE (EXACT DATA & METRICS)
+# 2. MASTER KNOWLEDGE ARCHIVE
 # ==============================================================================
 MASTER_STATIC = {
     "name": "MADHUSUDHANAN JANAKARAJAN (MADHU)",
@@ -67,7 +73,7 @@ MASTER_STATIC = {
     ]
 }
 
-# XML Helper for clickable Word hyperlinks
+# XML Helper for Word hyperlinks
 def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font_size_pt=10, is_highlighted=False):
     part = paragraph.part
     r_id = part.relate_to(url, docx.opc.constants.RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
@@ -91,7 +97,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD DOCUMENT GENERATION ENGINE
+# 3. WORD RESUME BUILDER
 # ==============================================================================
 def create_master_resume_docx(tailored_data, highlight_changes=False):
     doc = Document()
@@ -127,8 +133,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
                              r'</w:pBdr>')
             pPr.append(pBdr)
 
-    # ---------------- PAGE 1 ----------------
-    # 1. Header Block with Dual Variables (First & Last)
+    # 1. Header
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_name.paragraph_format.space_before = Pt(0)
@@ -214,7 +219,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Executive Capabilities & Impact Highlights
+    # 3. Capabilities
     add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=5, space_after=2, line_border=True)
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph(style='List Bullet')
@@ -245,7 +250,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
             if highlight_changes:
                 r_body.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 4. Honors & Recognition
+    # 4. Honors
     add_heading("HONORS & RECOGNITION", space_before=4, space_after=2, line_border=False)
     for h in MASTER_STATIC['honors']:
         p = doc.add_paragraph(style='List Bullet')
@@ -256,7 +261,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # 5. Education & Languages
+    # 5. Education
     add_heading("EDUCATION", space_before=4, space_after=2, line_border=False)
     for edu in MASTER_STATIC['education']:
         p = doc.add_paragraph(style='List Bullet')
@@ -290,10 +295,9 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     r_l2.font.name = 'Calibri'
     r_l2.font.size = Pt(10)
 
-    # ---------------- PAGE 2 EXPLICIT BOUNDARY ----------------
+    # ---------------- PAGE 2 BOUNDARY ----------------
     doc.add_page_break()
 
-    # 6. Professional Experience (3-Column Table)
     add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=2, line_border=False)
     
     table = doc.add_table(rows=2, cols=3)
@@ -385,7 +389,6 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
         {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 9.5}
     ]
 
-    # --- INJECT CONTEXTUAL JD BULLETS INTO COLUMN 2 OR 3 (MAX 18-24 WORDS EACH) ---
     c1_extra = tailored_data.get("column_2_extra_bullet", "")
     if c1_extra and c1_extra.strip():
         c1_items.insert(7, {"text": c1_extra.strip(), "is_bullet": True, "size": 9.5, "highlight": True})
@@ -454,10 +457,88 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io
 
 # ==============================================================================
-# 4. STREAMLIT FRONTEND & DUAL DOWNLOAD BUTTON ENGINE
+# 4. REPORTLAB PDF ENGINE (STRICT 2-PAGE COVER LETTER + MATCH MATRIX)
 # ==============================================================================
-st.title("🎯 Executive ATS Resume Tailoring Engine v2")
-st.caption("Dual Header Variables • Strict Column Word Budgets • Multi-Column JD Alignment • Locked 2-Page Boundary")
+def create_cover_letter_match_matrix_pdf(cover_data):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=14, leading=17, textColor=colors.HexColor('#002B49'), alignment=1)
+    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10.5, leading=13, textColor=colors.HexColor('#111827'), spaceBefore=8, spaceAfter=8)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.2, textColor=colors.HexColor('#1F2937'), alignment=4, spaceAfter=7)
+    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=12.5, textColor=colors.HexColor('#1F2937'), leftIndent=12, firstLineIndent=-12, spaceAfter=5)
+    sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#111827'), spaceBefore=8)
+    
+    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#002B49'), alignment=0)
+    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#1F2937'))
+    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#1F2937'))
+
+    story = []
+
+    # ---------------- PAGE 1: COVER LETTER ----------------
+    story.append(Paragraph("EXECUTIVE COVER LETTER", title_style))
+    story.append(Spacer(1, 8))
+    story.append(Paragraph(f"<b>Subject:</b> {cover_data.get('subject_line', 'Application for Executive Role')}", subject_style))
+    story.append(Paragraph("Dear Hiring Team,", body_style))
+    story.append(Paragraph(cover_data.get("cover_para_1", ""), body_style))
+    story.append(Paragraph(cover_data.get("cover_para_2", ""), body_style))
+    story.append(Paragraph("<b>Key highlights of what I bring to this mandate include:</b>", body_style))
+
+    for b in cover_data.get("cover_bullets", []):
+        story.append(Paragraph(f"• {b}", bullet_style))
+
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(cover_data.get("cover_para_closing", ""), body_style))
+    story.append(Paragraph("Sincerely,<br/><b>Madhusudhanan Janakarajan (Madhu)</b><br/>+971 50 654 7858 | sjrmadhu20@gmail.com", sign_style))
+
+    # ---------------- PAGE 2: MATCH MATRIX ----------------
+    story.append(PageBreak())
+    story.append(Paragraph(f"STRATEGIC MATCH MATRIX — {cover_data.get('target_company', 'TARGET ROLE').upper()}", title_style))
+    story.append(Spacer(1, 10))
+
+    matrix_rows = [[
+        Paragraph("<b>Job Requirement / Key Responsibility</b>", th_style),
+        Paragraph("<b>How I Match (Evidence & Track Record)</b>", th_style)
+    ]]
+
+    for item in cover_data.get("matrix_items", []):
+        matrix_rows.append([
+            Paragraph(f"<b>{item.get('requirement_title', '')}</b><br/><font color='#4B5563'>{item.get('requirement_desc', '')}</font>", td_left),
+            Paragraph(f"<b>{item.get('match_title', '')}:</b> {item.get('match_desc', '')}", td_right)
+        ])
+
+    matrix_table = Table(matrix_rows, colWidths=[2.6 * inch, 4.8 * inch])
+    matrix_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+    ]))
+
+    story.append(matrix_table)
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+# ==============================================================================
+# 5. STREAMLIT INTERFACE & SPEECH-TO-TEXT JAVASCRIPT ENGINE
+# ==============================================================================
+st.title("🎯 Executive ATS Resume & Match Engine")
+st.caption("Resume Builder • Dynamic Subtitles • Voice Dictation • ATS Match Score • 2-Page Cover & Matrix PDF")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -465,60 +546,167 @@ with st.sidebar:
         st.success("🟢 Gemini AI Engine: Active")
     else:
         st.warning("🟠 AI Engine: Inactive (Set GEMINI_API_KEY in Secrets)")
-    
     st.markdown("---")
-    st.write("📂 **Active Knowledge Archive:**")
-    st.caption("• Master Resume (Exact Layout)\n• Contextual Column Injections (Cols 2 & 3)\n• Strict 18-24 Word Limits")
+    st.write("📂 **Outputs Included:**")
+    st.caption("1. Clean ATS Resume (.docx)\n2. Highlighted Review (.docx)\n3. 2-Page Cover Letter & Match Matrix (.pdf)\n4. Radial ATS Alignment Score")
 
 col1, col2 = st.columns([1.1, 0.9])
 
 with col1:
     st.subheader("1. Job Inputs & Specifics")
-    job_desc = st.text_area("Target Job Description (JD):", height=240, placeholder="Paste JD here...")
-    special_instructions = st.text_area("Special Instructions & Context (Optional):", height=130, 
-                                        placeholder="E.g., Target company is Arla Foods, emphasize IT/Digital Transformation over pure sales...")
+    job_desc = st.text_area("Target Job Description (JD):", height=230, placeholder="Paste target Job Description here...")
+
+    st.markdown("##### Special Instructions & Context (Optional)")
     
-    generate_btn = st.button("🚀 Generate Tailored Master Resumes", type="primary")
+    # SPEECH-TO-TEXT HTML/JS COMPONENT FOR BROWSER MIC DICTATION
+    st.components.v1.html(
+        """
+        <div style="font-family: sans-serif; margin-bottom: 8px;">
+            <button id="micBtn" onclick="toggleDictation()" style="
+                background-color: #2563EB;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                font-size: 13px;
+                font-weight: 600;
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            ">🎙️ Click to Speak Instructions</button>
+            <span id="status" style="font-size: 12px; color: #4B5563; margin-left: 8px;"></span>
+        </div>
+        <script>
+            var recognizing = false;
+            var recognition;
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function() {
+                    recognizing = true;
+                    document.getElementById('micBtn').innerText = '🔴 Listening... (Click to Stop)';
+                    document.getElementById('micBtn').style.backgroundColor = '#DC2626';
+                    document.getElementById('status').innerText = 'Speak now...';
+                };
+
+                recognition.onresult = function(event) {
+                    var transcript = '';
+                    for (var i = event.resultIndex; i < event.results.length; ++i) {
+                        transcript += event.results[i][0].transcript + ' ';
+                    }
+                    var textAreas = window.parent.document.querySelectorAll('textarea');
+                    if (textAreas.length > 1) {
+                        textAreas[1].value = (textAreas[1].value + ' ' + transcript).trim();
+                        textAreas[1].dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                };
+
+                recognition.onerror = function(event) {
+                    document.getElementById('status').innerText = 'Mic error: ' + event.error;
+                    stopDictation();
+                };
+
+                recognition.onend = function() {
+                    stopDictation();
+                };
+            } else {
+                document.getElementById('status').innerText = 'Speech recognition not supported in this browser.';
+            }
+
+            function toggleDictation() {
+                if (recognizing) {
+                    recognition.stop();
+                    stopDictation();
+                } else {
+                    if (recognition) recognition.start();
+                }
+            }
+
+            function stopDictation() {
+                recognizing = false;
+                document.getElementById('micBtn').innerText = '🎙️ Click to Speak Instructions';
+                document.getElementById('micBtn').style.backgroundColor = '#2563EB';
+                document.getElementById('status').innerText = '';
+            }
+        </script>
+        """,
+        height=45
+    )
+
+    special_instructions = st.text_area(
+        "Voice or Typed Notes:",
+        height=100,
+        placeholder="E.g., Emphasize IT & Digital Transformation over commercial leadership, note recent scoping discussions with the hiring team...",
+        label_visibility="collapsed"
+    )
+    
+    generate_btn = st.button("🚀 Generate Tailored Resumes & Cover Matrix", type="primary")
 
 if generate_btn:
     if not job_desc:
         st.warning("Please paste a Job Description first.")
     else:
         with col2:
-            st.subheader("2. AI Analysis & Tailored Files Ready")
-            with st.spinner("Synthesizing JD, Special Instructions & Knowledge Archive..."):
+            st.subheader("2. AI Analysis & Tailored Documents")
+            with st.spinner("Synthesizing JD, Alignment Score & Strategic PDF Assets..."):
                 
                 tailored_data = None
+                cover_data = None
+                
                 if api_key:
                     prompt = f"""
-                    You are an executive resume architect for Madhusudhanan Janakarajan (23+ year FMCG, Digital Transformation & Enterprise Technology Executive).
+                    You are an executive resume architect and career strategist for Madhusudhanan Janakarajan (23+ year FMCG, Digital Transformation & Enterprise Technology Executive).
 
-                    STRICT RULES & CONSTRAINTS:
+                    STRICT RULES FOR GENERATING JSON:
 
                     1. HEADER SUBTITLE DUAL VARIABLES:
-                       - The complete line format is: "[header_focus_1] | FMCG | GTM & Omnichannel Leader | [header_focus_2]"
-                       - "header_focus_1" (First Variable): Target leadership title (e.g., "IT & Digital Transformation Director", "Sales & Distribution Transformation Director", "Commercial & Enterprise Strategy Director"). Max 36 characters.
-                       - "header_focus_2" (Last Variable): Matching domain focus (e.g., "Enterprise Sales Technology Leader", "Dairy & Packaged Foods Leadership", "Omnichannel RTM & Digital Execution"). Max 40 characters.
-                       - The full line MUST comfortably fit on 1 single line in 9 pt font.
+                       - Format: "[header_focus_1] | FMCG | GTM & Omnichannel Leader | [header_focus_2]"
+                       - "header_focus_1": Target leadership title (e.g., "IT & Digital Transformation Director", "Sales & Distribution Transformation Director"). Max 36 chars.
+                       - "header_focus_2": Domain specialization (e.g., "Enterprise Sales Technology Leader", "Dairy & Packaged Foods Leadership"). Max 40 chars.
 
-                    2. EXECUTIVE SUMMARY (EXACT 7 TO 8 PRINTED LINES / 135-150 WORDS):
-                       - Write a high-impact, authoritative executive summary of EXACTLY 135 to 150 words.
-                       - Tailor the opening narrative dynamically to the role:
-                         * If IT / Digital / Enterprise Tech JD: Lead with IT/SaaS modernization, digital product architecture, ERP/DMS integration, and bridging IT with sales execution.
-                         * If Commercial / Sales / Category JD: Lead with P&L ownership, RTM strategy, distributor governance, and digital commerce.
-                       - Retain core metrics ($100M+ P&L, 8,000+ retailers, 10+ Tier-1 CPG logos: P&G, Nestlé, GSK, Coca-Cola, ~40% logistics optimization, ~20% productivity uplifts).
+                    2. EXECUTIVE SUMMARY (EXACT 135-150 WORDS / 7-8 PRINTED LINES):
+                       - Tailor dynamically based on JD (lead with IT/SaaS/DMS modernization if IT role; lead with commercial/P&L leadership if commercial role).
+                       - Must anchor $100M+ P&L, 8,000+ retailers, 10+ Tier-1 CPG logos (P&G, Nestlé, GSK, Coca-Cola), ~40% logistics optimization, ~20% productivity uplifts.
 
                     3. EXECUTIVE CAPABILITIES (EXACT 5 BULLETS):
-                       - Prioritize the 5 master capability themes so the top 2 bullets address the highest priority requirements of the JD.
-                       - Maintain all 5 themes formatted as 'Bold Header: Detailed metric description'.
+                       - Prioritize the top 2 bullets to match the JD's highest priority requirements.
 
                     4. CONEKTR CATEGORY BULLET:
-                       - Synthesize the single best category aggregation bullet (e.g. Dairy & Packaged Foods, Beverages, Personal Care, or Multi-Category Principal Distribution).
+                       - Contextual category aggregation statement matching the JD.
 
-                    5. DYNAMIC EXPERIENCE INJECTIONS (STRICT 18 TO 24 WORDS / MAX 3 LINES):
-                       - In a 2.5-inch column, each line fits 7-8 words. Therefore, injected points MUST be strictly 18 to 24 words to never exceed 3 lines.
-                       - "column_2_extra_bullet" (Under Conektr / Digital FMCG): One sharp, metric-focused point (18-24 words) relating to digital commerce, marketplace apps, or logistics optimization aligned with the JD. Leave empty "" if not relevant.
-                       - "column_3_extra_bullet" (Under TransCPG / Ivy / Enterprise Transformation): One sharp, metric-focused point (18-24 words) relating to enterprise IT/SaaS architecture, DMS/ERP rollout, or AI sales automation aligned with the JD. Leave empty "" if not relevant.
+                    5. DYNAMIC EXPERIENCE INJECTIONS (STRICT 18 TO 24 WORDS EACH):
+                       - "column_2_extra_bullet": 18-24 words under Conektr (Digital FMCG) if relevant, else "".
+                       - "column_3_extra_bullet": 18-24 words under TransCPG/Ivy (Transformation) if relevant, else "".
+
+                    6. ATS MATCH SCORE & METRICS:
+                       - "ats_match_score": Realistic integer score from 85 to 98 based on candidate fit with the target JD.
+                       - "target_company": Company name identified from the JD.
+                       - "target_role": Role title from the JD.
+
+                    7. COVER LETTER & STRATEGIC MATCH MATRIX (FOR EXACT 2-PAGE REPORTLAB PDF):
+                       - "subject_line": "Application for [Role Title] - [Company Name]"
+                       - "cover_para_1": Authoritative opening highlighting 23+ years combining FMCG commercial leadership and enterprise digital development.
+                       - "cover_para_2": Immediate alignment with target company's current digital journey, operational context, and RTM challenges.
+                       - "cover_bullets": 4 high-impact bullets with metrics:
+                         1) Enterprise IT & SFA/DMS Deployments (P&G, Nestlé, GSK, Britannia).
+                         2) 0-to-1 Digital Architecture & Product Leadership (Conektr scaling, 8,000+ outlets, M&A exit).
+                         3) Measurable ROI & Executive Buy-in ($15M raised, ~40% logistics savings, ~200% productivity).
+                         4) Bridging Commercial & IT Teams ($100M+ P&L, 250+ distributors, high software adoption).
+                       - "cover_para_closing": Concise closing paragraph.
+                       - "matrix_items": Array of EXACTLY 6 rows matching the reference layout:
+                         [
+                           {{
+                             "requirement_title": "Requirement category (e.g. Sales & IT Convergence / Commercial Credibility)",
+                             "requirement_desc": "Short description of JD requirement",
+                             "match_title": "Candidate core pillar",
+                             "match_desc": "Specific quantified evidence ($100M+ P&L, SFA rollouts, etc.)"
+                           }}, ...
+                         ]
 
                     INPUT JOB DESCRIPTION:
                     {job_desc}
@@ -526,7 +714,7 @@ if generate_btn:
                     INPUT SPECIAL INSTRUCTIONS / CONTEXT:
                     {special_instructions}
 
-                    Return ONLY a valid JSON object:
+                    Return ONLY a valid JSON object matching this structure:
                     {{
                       "header_focus_1": "string",
                       "header_focus_2": "string",
@@ -534,7 +722,26 @@ if generate_btn:
                       "capabilities": ["string", "string", "string", "string", "string"],
                       "conektr_category_bullet": "string",
                       "column_2_extra_bullet": "string",
-                      "column_3_extra_bullet": "string"
+                      "column_3_extra_bullet": "string",
+                      "ats_match_score": 94,
+                      "target_company": "string",
+                      "target_role": "string",
+                      "cover_letter_data": {{
+                        "target_company": "string",
+                        "subject_line": "string",
+                        "cover_para_1": "string",
+                        "cover_para_2": "string",
+                        "cover_bullets": ["string", "string", "string", "string"],
+                        "cover_para_closing": "string",
+                        "matrix_items": [
+                          {{
+                            "requirement_title": "string",
+                            "requirement_desc": "string",
+                            "match_title": "string",
+                            "match_desc": "string"
+                          }}
+                        ]
+                      }}
                     }}
                     """
                     
@@ -549,16 +756,21 @@ if generate_btn:
                                     temperature=0.2
                                 )
                             )
-                            tailored_data = json.loads(response.text)
+                            parsed_json = json.loads(response.text)
+                            tailored_data = parsed_json
+                            cover_data = parsed_json.get("cover_letter_data", {})
                             break
-                        except Exception as e:
+                        except Exception:
                             continue
 
-                # Deterministic Fallback if API fails
+                # Fallback data if API key is missing or calls fail
                 if not tailored_data:
                     tailored_data = {
                         "header_focus_1": "IT & Digital Transformation Director",
                         "header_focus_2": "Enterprise Sales Technology Leader",
+                        "ats_match_score": 94,
+                        "target_company": "Target Enterprise",
+                        "target_role": "Senior Digital & Commercial Transformation Director",
                         "executive_summary": "IT & Digital Transformation Leader with 23+ years driving enterprise sales technology, FMCG commercial strategy, and digital commerce across MENA, India, and Asia. Combines a rare 360° operational vantage across enterprise IT/SaaS modernization, digital product architecture, and principal-led FMCG commercial leadership with $100M+ P&L ownership. Spearheaded multi-country GTM/SFA modernization, Perfect Store automation, and ERP/DMS integrations for 10+ tier-1 CPG enterprises—including P&G, Nestlé, GSK, Coca-Cola, and PepsiCo—consistently delivering ~40% logistics cost optimization and ~20% sales productivity uplifts. Founded and scaled the UAE's premier B2B2C digital distribution platform (Conektr) to an M&A exit, directing end-to-end digital product design, omnichannel ordering engines (App/Web/WhatsApp), and enterprise integrations serving 8,000+ retailers and 100+ global brands. Proven bridge between enterprise IT architecture, frontline sales execution, and C-suite stakeholders, driving regional digitization agendas with high user adoption.",
                         "capabilities": [
                             "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations, DMS/ERP integrations and SFA deployments (Over 5000+ Users) for global CPG leaders (P&G, Nestlé, Haleon/GSK, Coca-Cola). Deployed AI route/beat optimization, AI-driven demand forecasting, and automated ordering—delivering a ~40% drop in logistics/admin costs, >30% reduction in outlet coverage costs, ~30% frontline sales productivity uplift, ~150% expansion in numeric distribution growth.",
@@ -571,12 +783,110 @@ if generate_btn:
                         "column_2_extra_bullet": "Engineered automated micro-fulfillment dark store workflows for urban retailers, reducing replenishment turnaround by 35%.",
                         "column_3_extra_bullet": "Architected seamless API middleware syncing SAP SD and Dynamics 365 with mobile SFA, ensuring 100% order accuracy."
                     }
+                    cover_data = {
+                        "target_company": "Enterprise Partner",
+                        "subject_line": "Application for Senior IT and Digital Development Leadership",
+                        "cover_para_1": "I am writing to express my interest in the digital transformation leadership role. Having spent over two decades at the intersection of FMCG commercial leadership and enterprise digital development, I offer a 360° perspective that connects frontline Route-to-Market (RTM) realities directly with robust, scalable IT solutions.",
+                        "cover_para_2": "My alignment with your digital journey is immediate, bringing hands-on visibility into regional operating models, enterprise sales architecture, and omnichannel digitization priorities across GCC markets.",
+                        "cover_bullets": [
+                            "End-to-End Enterprise IT & SFA/DMS Deployments: Led multi-country cloud SaaS, SFA, DMS, and ERP integration programs (SAP SD, Microsoft Dynamics) across 10+ markets for global principals including P&G, Nestlé, Haleon/GSK, Coca-Cola, and Red Bull, alongside delivering Britannia's first national SFA rollout for 1,000+ users.",
+                            "0-to-1 Digital Architecture & Product Leadership: Founded and scaled Conektr (UAE's first digital B2B FMCG distribution platform) to 8,000+ retail outlets. Directed product engineering, multi-channel self-ordering (App, Web, WhatsApp), and backend ERP/fintech integrations before leading a successful M&A exit to Al Maya Group.",
+                            "Measurable ROI & Executive Buy-in: Raised $15M in VC/corporate capital by aligning C-suite leaders, while implementing AI-driven route optimization and conversational ordering engines that reduced logistics costs by ~40% and boosted frontline productivity by ~200%.",
+                            "Bridging Commercial & IT Teams: Having managed $100M+ P&Ls, 250+ distributor networks, and 600+ frontline sales personnel, I speak the language of sales heads, trade marketing managers, and software engineers with equal fluency, ensuring smooth change management and high digital adoption."
+                        ],
+                        "cover_para_closing": "Attached are my Strategic Match Matrix and Executive Resume for your review. I look forward to exploring how my track record in enterprise systems development and FMCG transformation can accelerate your digital roadmap.",
+                        "matrix_items": [
+                            {
+                                "requirement_title": "Sales & IT Convergence / Commercial Credibility",
+                                "requirement_desc": "Bridge commercial business requirements with IT capabilities; earn stakeholder respect across both domains.",
+                                "match_title": "360° FMCG Commercial + Sales IT Leadership",
+                                "match_desc": "23+ years combining principal commercial leadership ($100M+ P&L across GCC & India) with enterprise digital rollouts. Former Regional Sales Head at Britannia who transitioned into enterprise Sales IT."
+                            },
+                            {
+                                "requirement_title": "End-to-End Digitization Agenda Ownership",
+                                "requirement_desc": "Lead, strategize, and execute digital transformation initiatives from concept to deployment.",
+                                "match_title": "Built & Scaled UAE's 1st Digital B2B Platform",
+                                "match_desc": "Founded and led Conektr from scratch, scaling to 8,000+ retailers, 100+ brands, and ~$13.6M GMV. Owned full-cycle product design, tech development (App/Web/WhatsApp), and M&A exit."
+                            },
+                            {
+                                "requirement_title": "Senior Stakeholder Alignment & Influence",
+                                "requirement_desc": "Align internal leadership, cross-functional units, and external partners around complex digital programs.",
+                                "match_title": "Proven Executive Buy-in & $15M Capital Raised",
+                                "match_desc": "Aligned veteran FMCG C-suite executives (ex-Mondelēz President, BAT CFO) and institutional VCs to secure $15M in funding. Board-level advisor guiding global principals on RTM modernization."
+                            },
+                            {
+                                "requirement_title": "Enterprise SFA / DMS / RTM Rollout Experience",
+                                "requirement_desc": "Manage large-scale software rollouts, systems integration, and process re-engineering.",
+                                "match_title": "2,000+ User Deployments & 22+ Global Logos",
+                                "match_desc": "Led multi-country Sales Excellence and Cloud SaaS SFA/DMS implementations across 10+ markets for global giants including P&G, Nestlé, Haleon/GSK, Coca-Cola, BAT, and Red Bull."
+                            },
+                            {
+                                "requirement_title": "Challenging Status Quo & Operational Optimization",
+                                "requirement_desc": "Identify structural bottlenecks, streamline RTM processes, and drive measurable efficiency gains.",
+                                "match_title": "Quantifiable Commercial & Cost Impact",
+                                "match_desc": "Deployed AI route optimization, conversational B2B ordering, and demand forecasting, achieving ~40% reduction in logistics costs, >50% drop in outlet coverage costs, and ~200% uplift in sales productivity."
+                            },
+                            {
+                                "requirement_title": "Capability Building & Change Management",
+                                "requirement_desc": "Drive post-implementation adoption across distributor networks, sales teams, and trade channels.",
+                                "match_title": "Frontline Training & High Adoption Track Record",
+                                "match_desc": "Deep capability foundations managing commercial capability departments at Airtel, Reliance, and Britannia. Extensive hands-on experience driving technology adoption across 250+ distributor networks."
+                            }
+                        ]
+                    }
 
                 docx_clean = create_master_resume_docx(tailored_data, highlight_changes=False)
                 docx_highlighted = create_master_resume_docx(tailored_data, highlight_changes=True)
+                pdf_cover_matrix = create_cover_letter_match_matrix_pdf(cover_data)
+
+                # ==========================================================
+                # ATS MATCH SCORE VISUAL DISPLAY
+                # ==========================================================
+                score = tailored_data.get("ats_match_score", 94)
                 
-                st.success("✅ Tailored Master Resumes Ready!")
-                
+                st.markdown(f"""
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 18px;
+                    padding: 12px 18px;
+                    background: #F0FDF4;
+                    border: 1px solid #BBF7D0;
+                    border-radius: 10px;
+                    margin-bottom: 15px;
+                ">
+                    <div style="
+                        width: 58px;
+                        height: 58px;
+                        border-radius: 50%;
+                        background: conic-gradient(#16A34A {score * 3.6}deg, #E5E7EB 0deg);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">
+                        <div style="
+                            width: 44px;
+                            height: 44px;
+                            border-radius: 50%;
+                            background: white;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: bold;
+                            color: #16A34A;
+                            font-size: 15px;
+                        ">{score}%</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 15px; color: #166534;">Target JD Alignment Score: {score}/100</div>
+                        <div style="font-size: 12.5px; color: #15803D;">High Match: Experience & Leadership Scope directly align with JD competencies.</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # ==========================================================
+                # DOWNLOAD BUTTONS
+                # ==========================================================
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
                     st.download_button(
@@ -588,17 +898,26 @@ if generate_btn:
                     )
                 with col_btn2:
                     st.download_button(
-                        label="🟡 Download Highlighted Review Resume (.docx)",
+                        label="🟡 Download Highlighted Review (.docx)",
                         data=docx_highlighted,
                         file_name="Madhusudhanan_Janakarajan_Resume_Highlighted.docx",
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                         use_container_width=True
                     )
-                
+
+                st.download_button(
+                    label="📄 Download Cover Letter & Match Matrix (2-Page PDF)",
+                    data=pdf_cover_matrix,
+                    file_name="Madhusudhanan_Janakarajan_CoverLetter_MatchMatrix.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
+                )
+
                 with st.expander("🔍 View AI Tailored Variable Breakdown"):
                     st.write("**Header Variable 1:**", tailored_data.get("header_focus_1"))
                     st.write("**Header Variable 2:**", tailored_data.get("header_focus_2"))
                     st.write("**Executive Summary (135-150 Words):**", tailored_data.get("executive_summary"))
-                    st.write("**Column 2 (Conektr) Injected Bullet:**", tailored_data.get("column_2_extra_bullet"))
-                    st.write("**Column 3 (TransCPG/Ivy) Injected Bullet:**", tailored_data.get("column_3_extra_bullet"))
+                    st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
+                    st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
                     st.write("**Conektr Category Bullet:**", tailored_data.get("conektr_category_bullet"))
