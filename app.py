@@ -17,7 +17,7 @@ from google.genai import types
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT, TA_CENTER
 
@@ -461,35 +461,43 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. REPORTLAB ELEMENTS GENERATOR (FOR COVER, RESUME & MATRIX)
+# 4. REPORTLAB ELEMENTS GENERATOR (PERFECTED RESUME & SUITE)
 # ==============================================================================
 def get_pdf_styles():
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12.5, leading=15.5, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER, spaceAfter=10)
-    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceBefore=8, spaceAfter=8)
-    salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceAfter=8)
-    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, spaceAfter=8)
-    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, leftIndent=28, rightIndent=12, firstLineIndent=-14, spaceAfter=7)
-    sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceBefore=8)
     
-    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER)
-    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_LEFT)
-    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12.2, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
+    # Cover & Match Matrix Styles
+    title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12.5, leading=15.5, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER, spaceAfter=8)
+    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceBefore=6, spaceAfter=6)
+    salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=13.5, textColor=colors.HexColor('#111827'), spaceAfter=6)
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, spaceAfter=6)
+    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=13, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, leftIndent=20, rightIndent=8, firstLineIndent=-12, spaceAfter=5)
+    sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.5, textColor=colors.HexColor('#111827'), spaceBefore=6)
     
-    r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=3)
-    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=4)
-    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=TA_CENTER, spaceAfter=6)
-    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, spaceBefore=4, spaceAfter=2)
-    r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11, alignment=TA_JUSTIFY, spaceAfter=4)
-    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=10.5, alignment=TA_JUSTIFY, leftIndent=12, firstLineIndent=-8, spaceAfter=3)
-    col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=9.5, alignment=TA_LEFT)
+    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.0, leading=11.5, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER)
+    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, textColor=colors.HexColor('#1F2937'), alignment=TA_LEFT)
+    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
+    
+    # Calibrated High-Density Resume Styles (Exact 2-Page Fit)
+    r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11.5, leading=13.5, alignment=TA_CENTER, spaceAfter=2)
+    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.2, leading=10.5, alignment=TA_CENTER, spaceAfter=3, textColor=colors.HexColor('#111827'))
+    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName='Helvetica', fontSize=7.8, leading=10, alignment=TA_CENTER, spaceAfter=4, textColor=colors.HexColor('#374151'))
+    
+    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.8, leading=11, spaceBefore=4, spaceAfter=2, textColor=colors.HexColor('#000000'))
+    r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName='Helvetica', fontSize=7.8, leading=10.2, alignment=TA_JUSTIFY, spaceAfter=2, textColor=colors.HexColor('#1F2937'))
+    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName='Helvetica', fontSize=7.6, leading=9.8, alignment=TA_JUSTIFY, leftIndent=11, firstLineIndent=-7, spaceAfter=2.2, textColor=colors.HexColor('#1F2937'))
+    
+    # Page 2 3-Column Experience Table Typography
+    col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.8, leading=11, alignment=TA_CENTER, textColor=colors.HexColor('#002B49'))
+    col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName='Helvetica', fontSize=7.0, leading=8.8, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
 
     return {
         "title": title_style, "subject": subject_style, "salutation": salutation_style,
         "body": body_style, "bullet": bullet_style, "sign": sign_style,
         "th": th_style, "td_left": td_left, "td_right": td_right,
         "r_name": r_name_style, "r_sub": r_sub_style, "r_contact": r_contact_style,
-        "r_h": r_h_style, "r_body": r_body_style, "r_bullet": r_bullet_style, "col_cell": col_cell_style
+        "r_h": r_h_style, "r_body": r_body_style, "r_bullet": r_bullet_style,
+        "col_hdr": col_hdr_style, "col_cell": col_cell_style
     }
 
 def get_cover_letter_story(cover_data, st_dict):
@@ -514,7 +522,7 @@ def get_cover_letter_story(cover_data, st_dict):
 def get_match_matrix_story(cover_data, st_dict):
     story = [
         Paragraph("MATCH MATRIX", st_dict["title"]),
-        Spacer(1, 8)
+        Spacer(1, 6)
     ]
     matrix_rows = [[
         Paragraph("<b>Target Job Requirement / Focus Domain</b>", st_dict["th"]),
@@ -525,70 +533,138 @@ def get_match_matrix_story(cover_data, st_dict):
             Paragraph(f"<b>{item.get('requirement_title', '')}</b><br/><font color='#4B5563'>{item.get('requirement_desc', '')}</font>", st_dict["td_left"]),
             Paragraph(item.get('match_desc', ''), st_dict["td_right"])
         ])
-    matrix_table = Table(matrix_rows, colWidths=[2.5 * inch, 4.9 * inch])
+    matrix_table = Table(matrix_rows, colWidths=[2.5 * inch, 5.0 * inch])
     matrix_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('LEFTPADDING', (0, 0), (-1, -1), 7),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
     story.append(matrix_table)
     return story
 
 def get_resume_story(tailored_data, st_dict):
     story = []
+    
+    # ---------------- PAGE 1 ----------------
     story.append(Paragraph(MASTER_STATIC['name'], st_dict["r_name"]))
     f1 = tailored_data.get("header_focus_1", "Commercial & Digital Transformation Director")
     f2 = tailored_data.get("header_focus_2", "Enterprise Sales & Strategy Leader")
     sub_line = f"{f1} | FMCG | GTM & Omnichannel Leader | {f2}"
     story.append(Paragraph(sub_line, st_dict["r_sub"]))
     c = MASTER_STATIC['contact']
-    contact_line = f"{c['location']} | {c['phone']} | {c['email']}<br/>{c['linkedin']} | Portfolio: {c['portfolio']}<br/><b>Visa Status:</b> {c['visas']}"
+    contact_line = f"{c['location']} | {c['phone']} | <font color='#004B87'><u>{c['email']}</u></font><br/><font color='#004B87'><u>{c['linkedin']}</u></font> | Portfolio: <font color='#004B87'><u>{c['portfolio']}</u></font><br/><b>Visa Status:</b> {c['visas']}"
     story.append(Paragraph(contact_line, st_dict["r_contact"]))
     
     story.append(Paragraph("<b>EXECUTIVE SUMMARY</b>", st_dict["r_h"]))
     story.append(Paragraph(tailored_data.get("executive_summary", ""), st_dict["r_body"]))
     
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS</b>", st_dict["r_h"]))
+    story.append(HRFlowable(width="100%", thickness=0.6, color=colors.HexColor('#000000'), spaceBefore=1, spaceAfter=3))
+    
     for cap in tailored_data.get("capabilities", []):
-        story.append(Paragraph(f"• {cap}", st_dict["r_bullet"]))
-        
+        parts = cap.split(":", 1)
+        if len(parts) == 2:
+            story.append(Paragraph(f"• <b>{parts[0]}:</b>{parts[1]}", st_dict["r_bullet"]))
+        else:
+            story.append(Paragraph(f"• {cap}", st_dict["r_bullet"]))
+            
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>HONORS & RECOGNITION</b>", st_dict["r_h"]))
     for h in MASTER_STATIC['honors']:
         story.append(Paragraph(f"• {h}", st_dict["r_bullet"]))
         
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>EDUCATION</b>", st_dict["r_h"]))
     for edu in MASTER_STATIC['education']:
         story.append(Paragraph(f"• <b>{edu['degree']}</b> – {edu['details']}", st_dict["r_bullet"]))
+        
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>LANGUAGES & INTERESTS :</b>", st_dict["r_h"]))
     story.append(Paragraph(MASTER_STATIC['languages'], st_dict["r_body"]))
     story.append(Paragraph(MASTER_STATIC['interests'], st_dict["r_body"]))
     
+    # ---------------- PAGE 2 BOUNDARY ----------------
     story.append(PageBreak())
     story.append(Paragraph("<b>PROFESSIONAL EXPERIENCE</b>", st_dict["r_h"]))
+    story.append(Spacer(1, 2))
     
-    c1_txt = "<b>Britannia Industries Ltd | 2007–2011</b><br/><i>Regional Sales Head GCC & India</i><br/>• Owned $100M+ P&L across GCC & South India.<br/>• Directed 250+ distributor networks & 600+ sales staff.<br/>• Spearheaded Britannia's 1st SFA rollout (1,000+ users).<br/>• Delivered ~30% numeric distribution growth.<br/><br/><b>Airtel | Reliance | Tyco | 2001–2007</b><br/>• Frontline execution, journey planning & capability building.<br/>• Deployed SPIN selling & CRM/LMS infrastructure."
+    c1_txt = (
+        "<b>Britannia Industries Ltd | 2007 – 2011</b><br/>"
+        "<i>Regional Sales Head – GCC</i><br/>"
+        "<i>Regional Sales & Capability Head- India</i><br/>"
+        "• Owned $100M+ P&L across GCC (Saudi, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.<br/>"
+        "• Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional.<br/>"
+        "• Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade.<br/>"
+        "• Delivered ~30% numeric distribution growth, increased LPC to ~120%, cut sales admin costs ~30%.<br/>"
+        "• Turnaround RSM GCC: record monthly sales for 3 consecutive months (Best Employee Award).<br/><br/>"
+        "<b>Airtel | Reliance | Tyco | 2001 – 2007</b><br/>"
+        "<i>Commercial & Training Roles –</i><br/>"
+        "• Frontline execution, journey planning, and merchandiser enablement in telecom & security.<br/>"
+        "• Deployed SPIN selling capability training & integrated Oracle e-CRM & LMS infrastructure."
+    )
     
-    conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, food, and non-food portfolios.")
+    conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
     c1_dyn = tailored_data.get("column_2_extra_bullet", "")
-    c2_txt = f"<b>Conektr Tech Global | 2016–2024</b><br/><i>CEO & Founder (Digital FMCG Distributor)</i><br/>• Founded UAE's 1st Digital FMCG Distributor serving 8,000+ retailers & 100+ brands.<br/>• {conektr_cat}<br/>• Owned full P&L, trade terms, warehousing & logistics.<br/>• Scaled annual GMV from zero to ~AED 50M (~$13.6M).<br/>• Cut coverage cost >50%, productivity up ~150%.<br/>• Raised ~$15M; executed M&A exit to Al Maya Group."
+    c2_txt = (
+        "<i>Digital FMCG Principal / Distributor</i><br/>"
+        "<b>Chief Executive Officer & Founder</b><br/>"
+        "<b>Conektr Tech Global Ltd | UAE & India</b><br/>"
+        "<i>May 2016 – Aug 2024</i><br/>"
+        "• Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers & 100+ brands.<br/>"
+        f"• {conektr_cat}<br/>"
+        "• Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.<br/>"
+        "• Built app/web/WhatsApp self-ordering engine scaling GMV from zero to ~AED 50M (~$13.6M) at ~18% GM.<br/>"
+    )
     if c1_dyn:
-        c2_txt += f"<br/>• {c1_dyn}"
-        
+        c2_txt += f"• {c1_dyn}<br/>"
+    c2_txt += (
+        "• Cut coverage cost >50% and improved field productivity ~150% vs traditional trade.<br/>"
+        "• Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics ~40%.<br/>"
+        "• Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ conglomerate)."
+    )
+    
     c2_dyn = tailored_data.get("column_3_extra_bullet", "")
-    c3_txt = f"<b>TransCPG & FieldAssist | 2025–Present</b><br/><i>Transformation Advisor (Director)</i><br/>• Board Member guiding global RTM modernizations.<br/>• Advising CPG leaders on DMS/SFA, driving ~150% growth.<br/>• Built Bid2Bill AI/Voice-bot platform, cutting CAC ~40%.<br/><br/><b>Ivy Mobility Pte Ltd | 2011–2016</b><br/><i>Business Head – MEA</i><br/>• Built MEA setup into 2nd largest setup ($10M+ pipeline).<br/>• Won 22 logos: P&G, Nestlé, GSK, Coca-Cola, BAT.<br/>• Led P&G distributor mobile SFA in Kenya.<br/>• Deployed Cloud SFA to 3,000+ users."
+    c3_txt = (
+        "<i>Post Exit –</i><br/>"
+        "<b>Transformation Advisor (Director)</b><br/>"
+        "<b>TransCPG Inc. & FieldAssist</b><br/>"
+        "<b>2025 – Present</b><br/>"
+        "• Board Member guiding global operations scaling & platform build across FMCG principals & distributors.<br/>"
+        "• Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations (~150% growth).<br/>"
+    )
     if c2_dyn:
-        c3_txt += f"<br/>• {c2_dyn}"
-        
+        c3_txt += f"• {c2_dyn}<br/>"
+    c3_txt += (
+        "• Built Bid2Bill AI/Voice-bot & WhatsApp platform, cutting CAC ~40% with 4x engagement.<br/><br/>"
+        "<b>Business Head – MEA</b><br/>"
+        "<b>Ivy Mobility Pte Ltd | 2011 – 2016</b><br/>"
+        "• Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).<br/>"
+        "• Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, AKI.<br/>"
+        "• Personally led on-ground field deployment of mobile SFA for P&G networks in Kenya.<br/>"
+        "• Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving adoption and trade ROI."
+    )
+    
     exp_table_data = [
-        [Paragraph("<b>Traditional FMCG Operator</b>", st_dict["th"]), Paragraph("<b>Digital FMCG Distribution</b>", st_dict["th"]), Paragraph("<b>Distribution Transformation</b>", st_dict["th"])],
-        [Paragraph(c1_txt, st_dict["col_cell"]), Paragraph(c2_txt, st_dict["col_cell"]), Paragraph(c3_txt, st_dict["col_cell"])]
+        [
+            Paragraph("<b>Traditional FMCG Operator</b>", st_dict["col_hdr"]),
+            Paragraph("<b>Digital FMCG Distribution</b>", st_dict["col_hdr"]),
+            Paragraph("<b>Distribution Transformation</b>", st_dict["col_hdr"])
+        ],
+        [
+            Paragraph(c1_txt, st_dict["col_cell"]),
+            Paragraph(c2_txt, st_dict["col_cell"]),
+            Paragraph(c3_txt, st_dict["col_cell"])
+        ]
     ]
-    exp_table = Table(exp_table_data, colWidths=[2.46 * inch, 2.46 * inch, 2.46 * inch])
+    
+    # Exact 7.50 Inch Total Span: 3 x 2.50 Inch Columns
+    exp_table = Table(exp_table_data, colWidths=[2.50 * inch, 2.50 * inch, 2.50 * inch])
     exp_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
@@ -605,8 +681,16 @@ def get_resume_story(tailored_data, st_dict):
     story.append(Paragraph("<b>TECHNOLOGY STACK & DIGITAL ARCHITECTURE:</b>", st_dict["r_h"]))
     for category, stack in MASTER_STATIC['tech_stack'].items():
         story.append(Paragraph(f"• <b>{category}:</b> {stack}", st_dict["r_bullet"]))
+        
     story.append(Spacer(1, 3))
-    why_text = "<b><u>WHY HIRE ME:</u></b> A rare profile combining Core FMCG Operator + Digital FMCG Disruption pioneer + Enterprise Transformations (P&G, Coca-cola, GSK) + 10+ International Markets (GCC, India, Africa, Asia) + Successful Entrepreneurial $15M M&A Exit + Recipient of Global recognition for FMCG Contribution: O1A from USA & Golden Visa from UAE."
+    why_text = (
+        "<b><u>WHY HIRE ME:</u></b> A rare profile combining Core FMCG Operator <font color='#00B0F0'><b>+</b></font> "
+        "Digital FMCG Disruption pioneer <font color='#00B0F0'><b>+</b></font> "
+        "Enterprise Transformations (P&G, Coca-cola, GSK) <font color='#00B0F0'><b>+</b></font> "
+        "10+ International Markets (GCC, India, Africa, Asia) <font color='#00B0F0'><b>+</b></font> "
+        "Successful Entrepreneurial $15M M&A Exit <font color='#00B0F0'><b>+</b></font> "
+        "Recipient of Global recognition for FMCG Contribution: O1A from USA & Golden Visa from UAE - as an extraordinary ability leader."
+    )
     story.append(Paragraph(why_text, st_dict["r_body"]))
     return story
 
@@ -621,7 +705,8 @@ def create_cover_letter_match_matrix_pdf(cover_data):
 
 def create_resume_pdf(tailored_data):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=28, bottomMargin=28)
+    # 0.50 inch (36 pt) side margins, 0.35 inch (25 pt) top/bottom margins
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=25, bottomMargin=25)
     st_dict = get_pdf_styles()
     story = get_resume_story(tailored_data, st_dict)
     doc.build(story)
@@ -630,7 +715,8 @@ def create_resume_pdf(tailored_data):
 
 def create_combined_application_pdf(cover_data, tailored_data):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=30, bottomMargin=30)
+    # 0.50 inch (36 pt) side margins, 0.35 inch (25 pt) top/bottom margins
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=25, bottomMargin=25)
     st_dict = get_pdf_styles()
     story = (
         get_cover_letter_story(cover_data, st_dict) +
@@ -1045,11 +1131,10 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
-                # Target the active models directly
                 model_candidates = [
-                    "gemini-3.6-flash",
-                    "gemini-3.5-flash-lite",
-                    "gemini-3.5-flash"
+                    "gemini-2.5-flash",
+                    "gemini-2.0-flash",
+                    "gemini-1.5-flash"
                 ]
 
                 client = genai.Client(api_key=api_key)
