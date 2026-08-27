@@ -28,8 +28,16 @@ st.set_page_config(page_title="Executive ATS Application Engine", page_icon="�
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 # ==============================================================================
-# 2. MASTER KNOWLEDGE ARCHIVE
+# 2. MASTER KNOWLEDGE ARCHIVE (FULL DATA & EXACT MASTER PARAGRAPHS)
 # ==============================================================================
+MASTER_CAPABILITIES = {
+    "commercial": "Commercial & GTM Leadership ($100M+ P&L): Owned $100M+ annual FMCG revenue across GCC & India, directing 250+ distributors and 600+ field sales teams across GT, MT, Wholesale, B2B, and Institutional channels. Spearheaded RTM redesign, distributor governance, trade margin economics, pricing/promotions, and Order-to-Cash optimization.",
+    "digital": "Digital B2B2C Commerce & Omnichannel RTM: Founded and scaled Conektr (UAE's first digital FMCG distributor) to 8,000+ B2B retailers, managing 100+ brands and 2,000+ SKUs across Foods, Beverages, and Non-Food categories. Expanded into direct B2C commerce by launching the consumer app and proprietary BOSS loyalty engine (Buying, Operating, Selling & Saving), turning network grocers into fulfillment micro-hubs/dark stores. Built omnichannel ordering (App, Web, Conversational AI) with fintech-enabled payment rails.",
+    "transformation": "Enterprise Transformation & Commercial Optimization: Directed multi-country RTM modernizations, DMS/ERP integrations and SFA deployments (Over 5000+ Users) for global CPG leaders (P&G, Nestlé, Haleon/GSK, Coca-Cola). Deployed AI route/beat optimization, AI-driven demand forecasting, and automated ordering—delivering a ~40% drop in logistics/admin costs, >30% reduction in outlet coverage costs, ~30% frontline sales productivity uplift, ~150% expansion in numeric distribution growth.",
+    "capability": "Sales Capability & Training Leadership: Established and led regional sales training operations managing a team of certified trainers to design and deliver end-to-end sales induction and leadership curricula up to the Regional Sales Manager (RSM) level. Top-performer in consultative selling frameworks (including SPIN Selling), driving frontline execution rigor, distributor capability building, and institutionalized sales performance standards. Managed Train the Trainer, Soft skills and automation training.",
+    "entrepreneurship": "Entrepreneurial Venture Scaling & Governance: Raised $15M in funding from DIFC VC, veteran FMCG executives (ex-Mondelēz President, BAT CFO) validating commercial credibility, and executed a successful strategic M&A exit to Al Maya Group ($1B+ conglomerate). Awarded UAE Golden Visa and USA O-1A (Extraordinary Ability); featured in Bloomberg, Gulf News, and Magnitt."
+}
+
 MASTER_STATIC = {
     "name": "MADHUSUDHANAN JANAKARAJAN (MADHU)",
     "contact": {
@@ -98,7 +106,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME GENERATION
+# 3. WORD RESUME GENERATION ENGINE
 # ==============================================================================
 def create_master_resume_docx(tailored_data, highlight_changes=False):
     doc = Document()
@@ -207,7 +215,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    # 2. Executive Summary
+    # 2. Executive Summary (Dynamic, Rich Narrative)
     add_heading("EXECUTIVE SUMMARY", space_before=4, space_after=2, line_border=False)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -220,7 +228,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Capabilities
+    # 3. Capabilities (Exact Full 5 Master Bullet Descriptions Reordered)
     add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=5, space_after=2, line_border=True)
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph(style='List Bullet')
@@ -237,19 +245,13 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
             r_bold.bold = True
             r_bold.font.name = 'Calibri'
             r_bold.font.size = Pt(10)
-            if highlight_changes:
-                r_bold.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
             r_body = cp.add_run(parts[1])
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
-            if highlight_changes:
-                r_body.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
         else:
             r_body = cp.add_run(cap)
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
-            if highlight_changes:
-                r_body.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
     # 4. Honors
     add_heading("HONORS & RECOGNITION", space_before=4, space_after=2, line_border=False)
@@ -648,7 +650,7 @@ def create_full_application_zip(clean_docx, review_docx, matrix_pdf, matrix_docx
 # 6. STREAMLIT FRONTEND & ENGINE CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("AI-Powered Real-Time Tailoring • Dynamic Role Positioning • 2-Page Cover & Matrix PDF • ATS Scoring")
+st.caption("Real-Time AI Tailoring • Exact Master Resume Typography • 2-Page Cover & Matrix PDF • ATS Scoring")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -785,12 +787,14 @@ if generate_btn:
                    - "header_focus_2": Specialized domain focus matching the JD (e.g. "DTC & Marketplace Scaling Leader", "Enterprise Sales Technology Leader", "Omnichannel RTM & Digital Execution"). Max 40 chars.
 
                 3. EXECUTIVE SUMMARY (EXACT 135-150 WORDS / 7-8 LINES):
-                   - Authoritative paragraph dynamically tailored to the target role and company.
+                   - Write an authoritative, rich executive summary of EXACTLY 135 to 150 words dynamically tailored to the role and company.
                    - Emphasize relevant commercial, digital sales, marketplace scaling, and FMCG capabilities directly addressing the JD requirements.
                    - Retain core metrics ($100M+ P&L, 8,000+ retailers, 10+ Tier-1 CPG logos: P&G, Nestlé, GSK, Coca-Cola, ~40% logistics optimization, ~20% productivity uplifts).
 
-                4. EXECUTIVE CAPABILITIES (EXACT 5 BULLETS):
-                   - Prioritize the top 2 bullets to directly address the highest priority responsibilities of the JD.
+                4. CAPABILITY ORDERING (PRIORITIZATION):
+                   - Rank the 5 capability keys based on the JD's highest priorities (place the top 2 matching keys first):
+                     Available keys: ["commercial", "digital", "transformation", "capability", "entrepreneurship"]
+                   - "capability_order": An array containing all 5 keys in ordered priority (e.g., ["digital", "commercial", "transformation", "capability", "entrepreneurship"]).
 
                 5. CONEKTR CATEGORY BULLET:
                    - Category aggregation bullet strictly tailored to the products/domain of the target company.
@@ -827,7 +831,7 @@ if generate_btn:
                   "header_focus_1": "string",
                   "header_focus_2": "string",
                   "executive_summary": "string",
-                  "capabilities": ["string", "string", "string", "string", "string"],
+                  "capability_order": ["string", "string", "string", "string", "string"],
                   "conektr_category_bullet": "string",
                   "column_2_extra_bullet": "string",
                   "column_3_extra_bullet": "string",
@@ -855,7 +859,6 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
-                # Robust Multi-Model Candidate List
                 model_candidates = [
                     "gemini-3.6-flash",
                     "gemini-3-flash",
@@ -874,12 +877,24 @@ if generate_btn:
                             )
                         )
                         raw_text = response.text.strip()
-                        # Sanitize markdown wrapper if returned
                         if raw_text.startswith("```"):
                             raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
                             raw_text = re.sub(r"\s*```$", "", raw_text)
 
                         parsed_json = json.loads(raw_text)
+                        
+                        # Rebuild capabilities array using exact master full paragraphs based on AI order
+                        ordered_keys = parsed_json.get("capability_order", ["commercial", "digital", "transformation", "capability", "entrepreneurship"])
+                        full_capabilities = []
+                        for k in ordered_keys:
+                            if k in MASTER_CAPABILITIES:
+                                full_capabilities.append(MASTER_CAPABILITIES[k])
+                        # Append any missing keys
+                        for k, cap_text in MASTER_CAPABILITIES.items():
+                            if cap_text not in full_capabilities:
+                                full_capabilities.append(cap_text)
+                        
+                        parsed_json["capabilities"] = full_capabilities
                         tailored_data = parsed_json
                         cover_data = parsed_json.get("cover_letter_data", {})
                         break
