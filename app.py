@@ -9,8 +9,9 @@ import docx
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.oxml import parse_xml
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.oxml import parse_xml, OxmlElement
+from docx.oxml.ns import nsdecls, qn
 from google import genai
 from google.genai import types
 
@@ -63,7 +64,6 @@ def setup_calibri_fonts():
             except Exception:
                 continue
 
-    # Clean Fallback
     return {
         "regular": "Helvetica",
         "bold": "Helvetica-Bold",
@@ -157,7 +157,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (LOCKED MASTER)
+# 3. WORD RESUME ENGINE (UPDATED TO EXACT FORMATTING SPECIFICATIONS)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -165,32 +165,35 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style.font.size = Pt(10)
     style.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    def add_heading(title, space_before=4, space_after=2, line_border=False):
+    def add_heading(title, space_before=0, space_after=8, line_border_above=False, line_spacing=Pt(12), is_multiple=False):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         p.paragraph_format.space_before = Pt(space_before)
         p.paragraph_format.space_after = Pt(space_after)
-        p.paragraph_format.line_spacing = 1.0
+        if is_multiple:
+            p.paragraph_format.line_spacing = 1.16
+        else:
+            p.paragraph_format.line_spacing = line_spacing
         
+        if line_border_above:
+            pPr = p._p.get_or_add_pPr()
+            pBdr = parse_xml(r'<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                             r'<w:top w:val="single" w:sz="6" w:space="1" w:color="000000"/>'
+                             r'</w:pBdr>')
+            pPr.append(pBdr)
+            
         r = p.add_run(title.upper())
         r.bold = True
         r.font.name = 'Calibri'
         r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
-        
-        if line_border:
-            pPr = p._p.get_or_add_pPr()
-            pBdr = parse_xml(r'<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-                             r'<w:bottom w:val="single" w:sz="6" w:space="1" w:color="000000"/>'
-                             r'</w:pBdr>')
-            pPr.append(pBdr)
 
-    # 1. Header Block
+    # 1. Header Block (Alignment: Centered, Before: 0pt, After: 8pt, Multiple: 1.16)
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_name.paragraph_format.space_before = Pt(0)
-    p_name.paragraph_format.space_after = Pt(2.5)
-    p_name.paragraph_format.line_spacing = 1.15
+    p_name.paragraph_format.space_after = Pt(0)
+    p_name.paragraph_format.line_spacing = 1.16
     r_name = p_name.add_run(MASTER_STATIC['name'])
     r_name.bold = True
     r_name.font.name = 'Calibri'
@@ -202,25 +205,25 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_sub.paragraph_format.space_before = Pt(0)
-    p_sub.paragraph_format.space_after = Pt(2.5)
-    p_sub.paragraph_format.line_spacing = 1.15
+    p_sub.paragraph_format.space_after = Pt(8)
+    p_sub.paragraph_format.line_spacing = 1.16
     
     r_f1 = p_sub.add_run(f1)
     r_f1.bold = True
     r_f1.font.name = 'Calibri'
-    r_f1.font.size = Pt(9)
+    r_f1.font.size = Pt(9.5)
     if highlight_changes:
         r_f1.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
         
     r_mid = p_sub.add_run(" | FMCG | GTM & Omnichannel Leader | ")
     r_mid.bold = True
     r_mid.font.name = 'Calibri'
-    r_mid.font.size = Pt(9)
+    r_mid.font.size = Pt(9.5)
     
     r_f2 = p_sub.add_run(f2)
     r_f2.bold = True
     r_f2.font.name = 'Calibri'
-    r_f2.font.size = Pt(9)
+    r_f2.font.size = Pt(9.5)
     if highlight_changes:
         r_f2.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
@@ -228,8 +231,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     p_contact = doc.add_paragraph()
     p_contact.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_contact.paragraph_format.space_before = Pt(0)
-    p_contact.paragraph_format.space_after = Pt(3.5)
-    p_contact.paragraph_format.line_spacing = 1.15
+    p_contact.paragraph_format.space_after = Pt(8)
+    p_contact.paragraph_format.line_spacing = 1.16
     
     r_c1 = p_contact.add_run(f"{c['location']} | {c['phone']} | ")
     r_c1.font.name = 'Calibri'
@@ -246,10 +249,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_c2_mid.font.size = Pt(10)
     add_hyperlink(p_contact, c['portfolio'], c['portfolio'], color_rgb="004B87", underline=True, font_size_pt=10)
     
-    r_br2 = p_contact.add_run("\n")
-    r_br2.font.name = 'Calibri'
-    r_br2.font.size = Pt(10)
-    
     r_c3_lbl = p_contact.add_run("Visa Status: ")
     r_c3_lbl.bold = True
     r_c3_lbl.font.name = 'Calibri'
@@ -258,29 +257,34 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    # 2. Executive Summary
-    add_heading("EXECUTIVE SUMMARY", space_before=3.5, space_after=2, line_border=False)
+    # 2. Executive Summary (Alignment: Justified, Before: 0pt, After: 8pt, Multiple: 1.16)
+    add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=0, line_border_above=False, is_multiple=True)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     sp.paragraph_format.space_before = Pt(0)
-    sp.paragraph_format.space_after = Pt(3.5)
-    sp.paragraph_format.line_spacing = 1.15
+    sp.paragraph_format.space_after = Pt(8)
+    sp.paragraph_format.line_spacing = 1.16
     r_sum = sp.add_run(tailored_data.get("executive_summary", ""))
     r_sum.font.name = 'Calibri'
     r_sum.font.size = Pt(10)
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Capabilities
-    add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=4, space_after=2, line_border=True)
+    # 3. Capabilities (Line border above, Single line spacing, Left: -0.06", Hanging: 0.25", After: 6pt)
+    add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=0, space_after=8, line_border_above=True, line_spacing=Pt(12))
+    
     for cap in tailored_data.get("capabilities", []):
-        cp = doc.add_paragraph(style='List Bullet')
+        cp = doc.add_paragraph()
+        cp.paragraph_format.left_indent = Inches(-0.06)
+        cp.paragraph_format.first_line_indent = Inches(-0.25)
         cp.paragraph_format.space_before = Pt(0)
-        cp.paragraph_format.space_after = Pt(3.5)
-        cp.paragraph_format.line_spacing = 1.05
+        cp.paragraph_format.space_after = Pt(6)
+        cp.paragraph_format.line_spacing = Pt(12)
+        cp.alignment = WD_ALIGN_PARAGRAPH.LEFT
         
-        pPr = cp._p.get_or_add_pPr()
-        pPr.append(parse_xml(r'<w:contextualSpacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="0"/>'))
+        r_bullet = cp.add_run("•\t")
+        r_bullet.font.name = 'Calibri'
+        r_bullet.font.size = Pt(10)
         
         parts = cap.split(":", 1)
         if len(parts) == 2:
@@ -296,24 +300,31 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
 
-    # 4. Honors
-    add_heading("HONORS & RECOGNITION", space_before=3.5, space_after=2, line_border=False)
+    # 4. Honors, Education, Languages (Line border above HONORS, Left: 0.25", Hanging: 0.25", After: 8pt, Single)
+    add_heading("HONORS & RECOGNITION", space_before=0, space_after=8, line_border_above=True, line_spacing=Pt(12))
     for h in MASTER_STATIC['honors']:
-        p = doc.add_paragraph(style='List Bullet')
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.left_indent = Inches(0.25)
+        p.paragraph_format.first_line_indent = Inches(-0.25)
         p.paragraph_format.space_before = Pt(0)
-        p.paragraph_format.space_after = Pt(1.5)
-        p.paragraph_format.line_spacing = 1.0
+        p.paragraph_format.space_after = Pt(8)
+        p.paragraph_format.line_spacing = Pt(12)
+        
         r_t = p.add_run(h)
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # 5. Education
-    add_heading("EDUCATION", space_before=3.5, space_after=2, line_border=False)
+    add_heading("EDUCATION", space_before=0, space_after=8, line_border_above=False, line_spacing=Pt(12))
     for edu in MASTER_STATIC['education']:
-        p = doc.add_paragraph(style='List Bullet')
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.left_indent = Inches(0.25)
+        p.paragraph_format.first_line_indent = Inches(-0.25)
         p.paragraph_format.space_before = Pt(0)
-        p.paragraph_format.space_after = Pt(1.5)
-        p.paragraph_format.line_spacing = 1.0
+        p.paragraph_format.space_after = Pt(8)
+        p.paragraph_format.line_spacing = Pt(12)
+        
         r_bp = p.add_run(edu['degree'] + " – ")
         r_bp.bold = True
         r_bp.font.name = 'Calibri'
@@ -322,21 +333,23 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    add_heading("LANGUAGES & INTERESTS :", space_before=3.5, space_after=2, line_border=False)
+    add_heading("LANGUAGES & INTERESTS :", space_before=0, space_after=8, line_border_above=False, line_spacing=Pt(12))
     p_lang1 = doc.add_paragraph()
     p_lang1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    p_lang1.paragraph_format.left_indent = Inches(0.25)
     p_lang1.paragraph_format.space_before = Pt(0)
-    p_lang1.paragraph_format.space_after = Pt(2)
-    p_lang1.paragraph_format.line_spacing = 1.0
+    p_lang1.paragraph_format.space_after = Pt(8)
+    p_lang1.paragraph_format.line_spacing = Pt(12)
     r_l1 = p_lang1.add_run(MASTER_STATIC['languages'])
     r_l1.font.name = 'Calibri'
     r_l1.font.size = Pt(10)
 
     p_lang2 = doc.add_paragraph()
     p_lang2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    p_lang2.paragraph_format.left_indent = Inches(0.25)
     p_lang2.paragraph_format.space_before = Pt(0)
-    p_lang2.paragraph_format.space_after = Pt(2)
-    p_lang2.paragraph_format.line_spacing = 1.0
+    p_lang2.paragraph_format.space_after = Pt(8)
+    p_lang2.paragraph_format.line_spacing = Pt(12)
     r_l2 = p_lang2.add_run(MASTER_STATIC['interests'])
     r_l2.font.name = 'Calibri'
     r_l2.font.size = Pt(10)
@@ -344,28 +357,37 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     # ---------------- PAGE 2 BOUNDARY ----------------
     doc.add_page_break()
 
-    add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=2, line_border=False)
+    # Section Heading: Alignment Justified, Before 0pt, After 8pt, Single
+    add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=8, line_border_above=False, line_spacing=Pt(12))
     
+    # 3-Column Experience Table
+    # Preferred width: 8.0", Indent from left: -0.19", Column width: 2.63" each, Vertical alignment: Top
     table = doc.add_table(rows=2, cols=3)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.alignment = WD_TABLE_ALIGNMENT.LEFT
     table.autofit = False
     
-    col_widths = [Inches(2.5), Inches(2.5), Inches(2.5)]
+    tblPr = table._tbl.tblPr
+    tblpPr = parse_xml(r'<w:tblpPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:tblpX="-274" w:tblpY="0"/>')
+    tblPr.append(tblpPr)
+    
+    col_widths = [Inches(2.63), Inches(2.63), Inches(2.63)]
     for row in table.rows:
         for i, cell in enumerate(row.cells):
             cell.width = col_widths[i]
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
     hdr_titles = ["Traditional FMCG Operator", "Digital FMCG Distribution", "Distribution Transformation"]
     for i, title in enumerate(hdr_titles):
         cell = table.rows[0].cells[i]
         p = cell.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p.paragraph_format.space_before = Pt(1)
-        p.paragraph_format.space_after = Pt(1)
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        p.paragraph_format.space_before = Pt(2)
+        p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.line_spacing = Pt(11)
         r = p.add_run(title)
         r.bold = True
         r.font.name = 'Calibri'
-        r.font.size = Pt(11)
+        r.font.size = Pt(10)
         tcPr = cell._tc.get_or_add_tcPr()
         tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="E9ECEF"/>'))
 
@@ -373,13 +395,19 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         cell.text = ""
         for idx, item in enumerate(item_list):
             p = cell.add_paragraph()
-            p.paragraph_format.space_before = Pt(0 if idx == 0 else item.get("space_before", 0))
-            p.paragraph_format.space_after = Pt(item.get("space_after", 1))
+            p.paragraph_format.space_before = Pt(item.get("space_before", 0))
+            p.paragraph_format.space_after = Pt(item.get("space_after", 1.5))
+            p.paragraph_format.line_spacing = Pt(11)
             
             if item.get("is_bullet", False):
-                p.style = 'List Bullet'
-                p.paragraph_format.space_after = Pt(1.2)
-                p.paragraph_format.line_spacing = 1.0
+                p.paragraph_format.left_indent = Inches(0.15)
+                p.paragraph_format.first_line_indent = Inches(-0.15)
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                r_b = p.add_run("• ")
+                r_b.font.name = 'Calibri'
+                r_b.font.size = Pt(item.get("size", 9.5))
+            else:
+                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 
             r = p.add_run(item["text"])
             r.bold = item.get("bold", False)
@@ -390,26 +418,27 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
     c0_items = [
-        {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 1},
+        {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 9.5, "space_before": 2},
         {"text": "Regional Sales Head – GCC", "italic": True, "size": 9.5},
-        {"text": "Regional Sales & Capability Head- India", "italic": True, "size": 9.5, "space_after": 2},
+        {"text": "Regional Sales & Capability Head- India", "italic": True, "size": 9.5, "space_after": 3},
         {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 9.5},
         {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 9.5},
         {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 9.5},
         {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 9.5},
-        {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 9.5, "space_after": 3},
-        {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 2},
+        {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 9.5, "space_after": 4},
+        {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 9.5, "space_before": 3},
         {"text": "Commercial & Training Roles –", "italic": True, "size": 9.5, "space_after": 2},
         {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 9.5},
         {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 9.5}
     ]
 
+    # Clean multi-line structure for Column 2
     conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
     c1_items = [
-        {"text": "Digital FMCG Principal / Distributor", "italic": True, "size": 9.5, "space_before": 1},
-        {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10},
-        {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10},
-        {"text": "May 2016 – Aug 2024", "italic": True, "size": 9.5, "space_after": 2},
+        {"text": "Digital FMCG Principal / Distributor", "italic": True, "size": 9.5, "space_before": 2},
+        {"text": "Chief Executive Officer & Founder", "bold": True, "size": 9.5},
+        {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 9.5},
+        {"text": "May 2016 – Aug 2024", "italic": True, "size": 9.5, "space_after": 3},
         {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 9.5},
         {"text": conektr_cat, "is_bullet": True, "size": 9.5, "highlight": True},
         {"text": "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.", "is_bullet": True, "size": 9.5},
@@ -419,16 +448,17 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 9.5}
     ]
 
+    # Clean multi-line structure for Column 3
     c2_items = [
-        {"text": "Post Exit –", "italic": True, "size": 9.5, "space_before": 1},
-        {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
-        {"text": "TransCPG Inc. &", "bold": True, "size": 10},
-        {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_after": 2},
+        {"text": "Post Exit –", "italic": True, "size": 9.5, "space_before": 2},
+        {"text": "Transformation Advisor (Director)", "bold": True, "size": 9.5},
+        {"text": "TransCPG Inc. &", "bold": True, "size": 9.5},
+        {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 9.5, "space_after": 3},
         {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 9.5},
         {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 9.5},
-        {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 9.5, "space_after": 3},
-        {"text": "Business Head – MEA", "bold": True, "size": 10, "space_before": 2},
-        {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_after": 2},
+        {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 9.5, "space_after": 4},
+        {"text": "Business Head – MEA", "bold": True, "size": 9.5, "space_before": 3},
+        {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 9.5, "space_after": 2},
         {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 9.5},
         {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 9.5},
         {"text": "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.", "is_bullet": True, "size": 9.5},
@@ -457,37 +487,38 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     )
     table._tbl.tblPr.append(tblBorders)
 
-    # 7. Tech Stack
-    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=5, space_after=2.5, line_border=False)
+    # 7. Tech Stack (Heading: Justified, After: 8pt, Single; Items: Left: -0.06", Hanging: 0.25", After: 6pt, Single)
+    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=0, space_after=8, line_border_above=False, line_spacing=Pt(12))
     for category, stack in MASTER_STATIC['tech_stack'].items():
-        tp = doc.add_paragraph(style='List Bullet')
+        tp = doc.add_paragraph()
+        tp.paragraph_format.left_indent = Inches(-0.06)
+        tp.paragraph_format.first_line_indent = Inches(-0.25)
         tp.paragraph_format.space_before = Pt(0)
-        tp.paragraph_format.space_after = Pt(3)
-        tp.paragraph_format.line_spacing = 1.05
+        tp.paragraph_format.space_after = Pt(6)
+        tp.paragraph_format.line_spacing = Pt(12)
+        tp.alignment = WD_ALIGN_PARAGRAPH.LEFT
         
-        pPr = tp._p.get_or_add_pPr()
-        pPr.append(parse_xml(r'<w:contextualSpacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="0"/>'))
+        r_b = tp.add_run("•\t")
+        r_b.font.name = 'Calibri'
+        r_b.font.size = Pt(10)
         
         r_cat = tp.add_run(f"{category}: ")
         r_cat.bold = True
         r_cat.font.name = 'Calibri'
         r_cat.font.size = Pt(10)
+        
         r_st = tp.add_run(stack)
         r_st.font.name = 'Calibri'
         r_st.font.size = Pt(10)
 
-    # 8. Why Hire Me
+    # 8. Why Hire Me (Heading & Content Split, Justified, After 8pt, Single, '+' in Blue)
+    add_heading("WHY HIRE ME", space_before=0, space_after=2, line_border_above=False, line_spacing=Pt(12))
+    
     p_why = doc.add_paragraph()
     p_why.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_why.paragraph_format.space_before = Pt(4)
-    p_why.paragraph_format.space_after = Pt(2)
-    p_why.paragraph_format.line_spacing = 1.05
-    
-    r_wh_lbl = p_why.add_run("WHY HIRE ME: ")
-    r_wh_lbl.bold = True
-    r_wh_lbl.underline = True
-    r_wh_lbl.font.name = 'Calibri'
-    r_wh_lbl.font.size = Pt(10)
+    p_why.paragraph_format.space_before = Pt(0)
+    p_why.paragraph_format.space_after = Pt(8)
+    p_why.paragraph_format.line_spacing = Pt(12)
     
     for text_segment, is_plus in MASTER_STATIC['why_hire_me_parts']:
         r_part = p_why.add_run(text_segment)
@@ -528,16 +559,16 @@ def get_pdf_styles():
     td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=9.5, leading=12.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
     
     # 1:1 Matched Full-Page Resume Typography
-    r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=12, leading=14.5, alignment=TA_CENTER, spaceAfter=2.5)
-    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=2.5, textColor=colors.HexColor('#111827'))
-    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_CENTER, spaceAfter=3.5, textColor=colors.HexColor('#374151'))
+    r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=2)
+    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=9.5, leading=12, alignment=TA_CENTER, spaceAfter=4, textColor=colors.HexColor('#111827'))
+    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=13, alignment=TA_CENTER, spaceAfter=6, textColor=colors.HexColor('#374151'))
     
-    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12.5, spaceBefore=3.5, spaceAfter=2, textColor=colors.HexColor('#000000'))
-    r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_JUSTIFY, spaceAfter=3, textColor=colors.HexColor('#1F2937'))
-    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_JUSTIFY, leftIndent=12, firstLineIndent=-8, spaceAfter=3, textColor=colors.HexColor('#1F2937'))
+    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12.5, spaceBefore=4, spaceAfter=3, textColor=colors.HexColor('#000000'), alignment=TA_JUSTIFY)
+    r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=13, alignment=TA_JUSTIFY, spaceAfter=5, textColor=colors.HexColor('#1F2937'))
+    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_LEFT, leftIndent=12, firstLineIndent=-12, spaceAfter=4, textColor=colors.HexColor('#1F2937'))
     
-    col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=11, leading=13, alignment=TA_CENTER, textColor=colors.HexColor('#002B49'))
-    col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=9.5, leading=11.2, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
+    col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12, alignment=TA_LEFT, textColor=colors.HexColor('#002B49'))
+    col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=9.5, leading=11.5, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
 
     return {
         "title": title_style, "subject": subject_style, "salutation": salutation_style,
@@ -605,15 +636,15 @@ def get_resume_story(tailored_data, st_dict):
     sub_line = f"{f1} | FMCG | GTM & Omnichannel Leader | {f2}"
     story.append(Paragraph(sub_line, st_dict["r_sub"]))
     c = MASTER_STATIC['contact']
-    contact_line = f"{c['location']} | {c['phone']} | <font color='#004B87'><u>{c['email']}</u></font><br/><font color='#004B87'><u>{c['linkedin']}</u></font> | Portfolio: <font color='#004B87'><u>{c['portfolio']}</u></font><br/><b>Visa Status:</b> {c['visas']}"
+    contact_line = f"{c['location']} | {c['phone']} | <a href='{c['email_url']}'><font color='#004B87'><u>{c['email']}</u></font></a><br/><a href='{c['linkedin']}'><font color='#004B87'><u>{c['linkedin']}</u></font></a> | Portfolio: <a href='{c['portfolio']}'><font color='#004B87'><u>{c['portfolio']}</u></font></a><br/><b>Visa Status:</b> {c['visas']}"
     story.append(Paragraph(contact_line, st_dict["r_contact"]))
     
     story.append(Paragraph("<b>EXECUTIVE SUMMARY</b>", st_dict["r_h"]))
     story.append(Paragraph(tailored_data.get("executive_summary", ""), st_dict["r_body"]))
     
     story.append(Spacer(1, 2))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#000000'), spaceBefore=2, spaceAfter=3))
     story.append(Paragraph("<b>EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS</b>", st_dict["r_h"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#000000'), spaceBefore=1, spaceAfter=2.5))
     
     for cap in tailored_data.get("capabilities", []):
         parts = cap.split(":", 1)
@@ -623,9 +654,15 @@ def get_resume_story(tailored_data, st_dict):
             story.append(Paragraph(f"• {cap}", st_dict["r_bullet"]))
             
     story.append(Spacer(1, 2))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#000000'), spaceBefore=2, spaceAfter=3))
     story.append(Paragraph("<b>HONORS & RECOGNITION</b>", st_dict["r_h"]))
     for h in MASTER_STATIC['honors']:
-        story.append(Paragraph(f"• {h}", st_dict["r_bullet"]))
+        if "https://" in h:
+            parts = h.split(" - ")
+            url = parts[1]
+            story.append(Paragraph(f"• {parts[0]} - <a href='{url}'><font color='#004B87'><u>{url}</u></font></a>", st_dict["r_bullet"]))
+        else:
+            story.append(Paragraph(f"• {h}", st_dict["r_bullet"]))
         
     story.append(Spacer(1, 2))
     story.append(Paragraph("<b>EDUCATION</b>", st_dict["r_h"]))
@@ -711,10 +748,10 @@ def get_resume_story(tailored_data, st_dict):
         ]
     ]
     
-    exp_table = Table(exp_table_data, colWidths=[2.50 * inch, 2.50 * inch, 2.50 * inch])
+    exp_table = Table(exp_table_data, colWidths=[2.63 * inch, 2.63 * inch, 2.63 * inch])
     exp_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
-        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
         ('TOPPADDING', (0, 0), (-1, -1), 3),
@@ -730,8 +767,9 @@ def get_resume_story(tailored_data, st_dict):
         story.append(Paragraph(f"• <b>{category}:</b> {stack}", st_dict["r_bullet"]))
         
     story.append(Spacer(1, 2.5))
+    story.append(Paragraph("<b>WHY HIRE ME</b>", st_dict["r_h"]))
     why_text = (
-        "<b><u>WHY HIRE ME:</u></b> A rare profile combining Core FMCG Operator <font color='#00B0F0'><b>+</b></font> "
+        "A rare profile combining Core FMCG Operator <font color='#00B0F0'><b>+</b></font> "
         "Digital FMCG Disruption pioneer <font color='#00B0F0'><b>+</b></font> "
         "Enterprise Transformations (P&G, Coca-cola, GSK) <font color='#00B0F0'><b>+</b></font> "
         "10+ International Markets (GCC, India, Africa, Asia) <font color='#00B0F0'><b>+</b></font> "
@@ -1298,7 +1336,6 @@ if st.session_state.get("has_results", False):
         </div>
         """, unsafe_allow_html=True)
 
-        # 1-Click Master ZIP (5 Files)
         st.download_button(
             label=f"📦 Download Complete Application Bundle (.ZIP) — 5 Files",
             data=st.session_state["master_zip"],
