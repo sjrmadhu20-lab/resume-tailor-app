@@ -311,9 +311,20 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         p.paragraph_format.space_after = Pt(8)
         p.paragraph_format.line_spacing = Pt(12)
         
-        r_t = p.add_run(h)
-        r_t.font.name = 'Calibri'
-        r_t.font.size = Pt(10)
+        r_bullet = p.add_run("•\t")
+        r_bullet.font.name = 'Calibri'
+        r_bullet.font.size = Pt(10)
+        
+        if "https://" in h:
+            parts = h.split(" - ")
+            r_prefix = p.add_run(parts[0] + " - ")
+            r_prefix.font.name = 'Calibri'
+            r_prefix.font.size = Pt(10)
+            add_hyperlink(p, parts[1].strip(), parts[1].strip(), color_rgb="004B87", underline=True, font_size_pt=10)
+        else:
+            r_t = p.add_run(h)
+            r_t.font.name = 'Calibri'
+            r_t.font.size = Pt(10)
 
     add_heading("EDUCATION", space_before=0, space_after=8, line_border_above=False, line_spacing=Pt(12))
     for edu in MASTER_STATIC['education']:
@@ -324,6 +335,10 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(8)
         p.paragraph_format.line_spacing = Pt(12)
+        
+        r_bullet = p.add_run("•\t")
+        r_bullet.font.name = 'Calibri'
+        r_bullet.font.size = Pt(10)
         
         r_bp = p.add_run(edu['degree'] + " – ")
         r_bp.bold = True
@@ -337,9 +352,13 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     p_lang1 = doc.add_paragraph()
     p_lang1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p_lang1.paragraph_format.left_indent = Inches(0.25)
+    p_lang1.paragraph_format.first_line_indent = Inches(-0.25)
     p_lang1.paragraph_format.space_before = Pt(0)
     p_lang1.paragraph_format.space_after = Pt(8)
     p_lang1.paragraph_format.line_spacing = Pt(12)
+    r_bullet_l1 = p_lang1.add_run("•\t")
+    r_bullet_l1.font.name = 'Calibri'
+    r_bullet_l1.font.size = Pt(10)
     r_l1 = p_lang1.add_run(MASTER_STATIC['languages'])
     r_l1.font.name = 'Calibri'
     r_l1.font.size = Pt(10)
@@ -347,9 +366,13 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     p_lang2 = doc.add_paragraph()
     p_lang2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p_lang2.paragraph_format.left_indent = Inches(0.25)
+    p_lang2.paragraph_format.first_line_indent = Inches(-0.25)
     p_lang2.paragraph_format.space_before = Pt(0)
     p_lang2.paragraph_format.space_after = Pt(8)
     p_lang2.paragraph_format.line_spacing = Pt(12)
+    r_bullet_l2 = p_lang2.add_run("•\t")
+    r_bullet_l2.font.name = 'Calibri'
+    r_bullet_l2.font.size = Pt(10)
     r_l2 = p_lang2.add_run(MASTER_STATIC['interests'])
     r_l2.font.name = 'Calibri'
     r_l2.font.size = Pt(10)
@@ -671,8 +694,8 @@ def get_resume_story(tailored_data, st_dict):
         
     story.append(Spacer(1, 2))
     story.append(Paragraph("<b>LANGUAGES & INTERESTS :</b>", st_dict["r_h"]))
-    story.append(Paragraph(MASTER_STATIC['languages'], st_dict["r_body"]))
-    story.append(Paragraph(MASTER_STATIC['interests'], st_dict["r_body"]))
+    story.append(Paragraph(f"• {MASTER_STATIC['languages']}", st_dict["r_body"]))
+    story.append(Paragraph(f"• {MASTER_STATIC['interests']}", st_dict["r_body"]))
     
     # ---------------- PAGE 2 BOUNDARY ----------------
     story.append(PageBreak())
