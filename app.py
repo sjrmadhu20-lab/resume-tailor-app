@@ -3,6 +3,7 @@ import json
 import io
 import os
 import re
+import time
 import zipfile
 import docx
 from docx import Document
@@ -1080,9 +1081,9 @@ if generate_btn:
                      3) Measurable P&L & Operational ROI: ...
                      4) Cross-Functional Leadership & Partner Strategy: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
-                   - "matrix_items": Array of EXACTLY 6 to 7 concise competency rows mapping JD pillars to candidate evidence.
+                   - "matrix_items": Array of EXACTLY 6 concise competency rows mapping JD pillars to candidate evidence.
                      IMPORTANT FOR MATCH MATRIX:
-                     * "requirement_title": Concise statement of the requirement only. Do NOT repeat or elaborate here.
+                     * "requirement_title": Concise statement of the requirement only (no description, no redundant headings).
                      * "match_desc": Direct, concise narrative paragraph demonstrating evidence WITHOUT redundant bold prefixes.
 
                 INPUT JOB DESCRIPTION:
@@ -1124,45 +1125,52 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
+                # Tiered, reliable model candidate list
                 model_candidates = [
                     "gemini-2.5-flash",
-                    "gemini-3.1-pro-preview",
-                    "gemini-3.5-flash-lite"
+                    "gemini-3.5-flash-lite",
+                    "gemini-2.0-flash"
                 ]
 
                 client = genai.Client(api_key=api_key)
+                
+                # Robust retry loop across candidate models with exponential backoff
                 for model_candidate in model_candidates:
-                    try:
-                        response = client.models.generate_content(
-                            model=model_candidate,
-                            contents=prompt,
-                            config=types.GenerateContentConfig(
-                                response_mime_type="application/json"
+                    for attempt in range(2):  # Try twice per model on transient 503/429
+                        try:
+                            response = client.models.generate_content(
+                                model=model_candidate,
+                                contents=prompt,
+                                config=types.GenerateContentConfig(
+                                    response_mime_type="application/json",
+                                    temperature=0.2
+                                )
                             )
-                        )
-                        raw_text = response.text.strip()
-                        if raw_text.startswith("```"):
-                            raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
-                            raw_text = re.sub(r"\s*```$", "", raw_text)
+                            raw_text = response.text.strip()
+                            if raw_text.startswith("```"):
+                                raw_text = re.sub(r"^```(?:json)?\s*", "", raw_text)
+                                raw_text = re.sub(r"\s*```$", "", raw_text)
 
-                        parsed_json = json.loads(raw_text)
-                        
-                        ordered_keys = parsed_json.get("capability_order", ["commercial", "digital", "transformation", "capability", "entrepreneurship"])
-                        full_capabilities = []
-                        for k in ordered_keys:
-                            if k in MASTER_CAPABILITIES:
-                                full_capabilities.append(MASTER_CAPABILITIES[k])
-                        for k, cap_text in MASTER_CAPABILITIES.items():
-                            if cap_text not in full_capabilities:
-                                full_capabilities.append(cap_text)
-                        
-                        parsed_json["capabilities"] = full_capabilities
-                        tailored_data = parsed_json
-                        cover_data = parsed_json.get("cover_letter_data", {})
+                            parsed_json = json.loads(raw_text)
+                            
+                            ordered_keys = parsed_json.get("capability_order", ["commercial", "digital", "transformation", "capability", "entrepreneurship"])
+                            full_capabilities = []
+                            for k in ordered_keys:
+                                if k in MASTER_CAPABILITIES:
+                                    full_capabilities.append(MASTER_CAPABILITIES[k])
+                            for k, cap_text in MASTER_CAPABILITIES.items():
+                                if cap_text not in full_capabilities:
+                                    full_capabilities.append(cap_text)
+                            
+                            parsed_json["capabilities"] = full_capabilities
+                            tailored_data = parsed_json
+                            cover_data = parsed_json.get("cover_letter_data", {})
+                            break
+                        except Exception as e:
+                            last_error = str(e)
+                            time.sleep(1.5 * (attempt + 1))  # Pause to clear demand spikes
+                    if tailored_data:
                         break
-                    except Exception as e:
-                        last_error = str(e)
-                        continue
 
                 if tailored_data:
                     clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
