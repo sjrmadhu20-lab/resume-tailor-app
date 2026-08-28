@@ -1128,11 +1128,11 @@ if generate_btn:
                 cover_data = None
                 last_error = ""
 
-                # Valid, active endpoints for Google GenAI SDK
+                # Target active, validated model aliases
                 model_candidates = [
                     "gemini-2.5-flash",
-                    "gemini-2.0-flash",
-                    "gemini-2.5-pro"
+                    "gemini-3.1-pro-preview",
+                    "gemini-3.5-flash-lite"
                 ]
 
                 client = genai.Client(api_key=api_key)
@@ -1268,4 +1268,49 @@ if st.session_state.get("has_results", False):
                 data=st.session_state["comb_pdf"],
                 file_name=f"1_Complete_Application_Set_Cover_Resume_Matrix.pdf",
                 mime="application/pdf",
-                use_container_width=True)
+                use_container_width=True
+            )
+        with col_b2:
+            st.download_button(
+                label="📝 2. Combined Application Set (.docx)",
+                data=st.session_state["comb_docx"],
+                file_name=f"2_Complete_Application_Set_Cover_Resume_Matrix.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True
+            )
+
+        col_b3, col_b4 = st.columns(2)
+        with col_b3:
+            st.download_button(
+                label="🟡 3. Highlighted Review Resume (.docx)",
+                data=st.session_state["review_docx"],
+                file_name=f"3_Madhusudhanan_Janakarajan_Resume_Review.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True
+            )
+        with col_b4:
+            st.download_button(
+                label="📄 4. Clean ATS Resume (.pdf)",
+                data=st.session_state["resume_pdf"],
+                file_name=f"4_Madhusudhanan_Janakarajan_Resume_Clean.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+
+        st.download_button(
+            label="📊 5. Cover Letter & Match Matrix (.pdf)",
+            data=st.session_state["cover_matrix_pdf"],
+            file_name=f"5_Cover_Letter_and_Match_Matrix.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+
+        with st.expander("🔍 View AI Tailored Dynamic Variables"):
+            st.write("**Identified Company:**", target_co)
+            st.write("**Identified Role:**", target_rl)
+            st.write("**Header Focus 1:**", tailored_data.get("header_focus_1"))
+            st.write("**Header Focus 2:**", tailored_data.get("header_focus_2"))
+            st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
+            st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
+            st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
+            st.write("**Match Matrix Rows Generated:**", len(cover_data.get("matrix_items", [])))
