@@ -155,7 +155,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (PERFECT PAGE 1 SPACING & ALIGNMENT)
+# 3. WORD RESUME ENGINE (UPDATED INSET BOTTOM SECTION BULLETS)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -256,7 +256,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    # 2. Executive Summary (Space after heading: 8pt = one full line)
+    # 2. Executive Summary (Space after heading: 8pt)
     add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=8, line_border_above=False, is_multiple=True)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -295,13 +295,13 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
 
-    # 4. Honors (Border Above, Space after heading: 8pt, Left: 0.25", Hanging: 0.25")
+    # 4. Honors (Border Above, Space after heading: 8pt, Left: 0.45", Hanging: 0.20" -> Bullet starts at 0.25")
     add_heading("HONORS & RECOGNITION", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
     for idx, h in enumerate(MASTER_STATIC['honors']):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p.paragraph_format.left_indent = Inches(0.25)
-        p.paragraph_format.first_line_indent = Inches(-0.25)
+        p.paragraph_format.left_indent = Inches(0.45)
+        p.paragraph_format.first_line_indent = Inches(-0.20)
         is_last = (idx == len(MASTER_STATIC['honors']) - 1)
         apply_xml_spacing(p, before_pt=0, after_pt=6 if is_last else 0, line_twips=240)
         
@@ -320,13 +320,13 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_t.font.name = 'Calibri'
             r_t.font.size = Pt(10)
 
-    # 5. Education (Space after heading: 8pt, Left: 0.25", Hanging: 0.25")
+    # 5. Education (Space after heading: 8pt, Left: 0.45", Hanging: 0.20" -> Bullet starts at 0.25")
     add_heading("EDUCATION", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     for idx, edu in enumerate(MASTER_STATIC['education']):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p.paragraph_format.left_indent = Inches(0.25)
-        p.paragraph_format.first_line_indent = Inches(-0.25)
+        p.paragraph_format.left_indent = Inches(0.45)
+        p.paragraph_format.first_line_indent = Inches(-0.20)
         is_last = (idx == len(MASTER_STATIC['education']) - 1)
         apply_xml_spacing(p, before_pt=0, after_pt=6 if is_last else 0, line_twips=240)
         
@@ -342,13 +342,13 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # 6. Languages & Interests (Space after heading: 8pt, Left: 0.25", Hanging: 0.25")
+    # 6. Languages & Interests (Space after heading: 8pt, Left: 0.45", Hanging: 0.20" -> Bullet starts at 0.25")
     add_heading("LANGUAGES & INTERESTS :", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     
     p_lang1 = doc.add_paragraph()
     p_lang1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_lang1.paragraph_format.left_indent = Inches(0.25)
-    p_lang1.paragraph_format.first_line_indent = Inches(-0.25)
+    p_lang1.paragraph_format.left_indent = Inches(0.45)
+    p_lang1.paragraph_format.first_line_indent = Inches(-0.20)
     apply_xml_spacing(p_lang1, before_pt=0, after_pt=0, line_twips=240)
     r_bullet_l1 = p_lang1.add_run("•\t")
     r_bullet_l1.font.name = 'Calibri'
@@ -359,8 +359,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
 
     p_lang2 = doc.add_paragraph()
     p_lang2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_lang2.paragraph_format.left_indent = Inches(0.25)
-    p_lang2.paragraph_format.first_line_indent = Inches(-0.25)
+    p_lang2.paragraph_format.left_indent = Inches(0.45)
+    p_lang2.paragraph_format.first_line_indent = Inches(-0.20)
     apply_xml_spacing(p_lang2, before_pt=0, after_pt=0, line_twips=240)
     r_bullet_l2 = p_lang2.add_run("•\t")
     r_bullet_l2.font.name = 'Calibri'
@@ -572,8 +572,8 @@ def get_pdf_styles():
     
     # Capabilities Indent: 0.20" (~14pt)
     r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_LEFT, leftIndent=14, firstLineIndent=-12, spaceAfter=3.5, textColor=colors.HexColor('#1F2937'))
-    # Bottom list indent: 0.25" (~18pt), tight spacing within section
-    r_bottom_bullet_style = ParagraphStyle('RBotBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_JUSTIFY, leftIndent=18, firstLineIndent=-12, spaceAfter=1, textColor=colors.HexColor('#1F2937'))
+    # Bottom list indent: 0.45" (~32pt, bullet at ~18pt), tight spacing within section
+    r_bottom_bullet_style = ParagraphStyle('RBotBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_JUSTIFY, leftIndent=32, firstLineIndent=-14, spaceAfter=1, textColor=colors.HexColor('#1F2937'))
     
     col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12, alignment=TA_LEFT, textColor=colors.HexColor('#002B49'))
     col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=9.5, leading=11.5, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
