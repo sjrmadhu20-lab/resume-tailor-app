@@ -213,7 +213,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW[cite: 1]
 
     add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
-    for cap in tailored_data.get("capabilities", []):[cite: 1]
+    for cap in tailored_data.get("capabilities", [])
         cp = doc.add_paragraph()[cite: 1]
         cp.paragraph_format.left_indent = Inches(0.20)
         cp.paragraph_format.first_line_indent = Inches(-0.25)
