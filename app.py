@@ -139,7 +139,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_name.paragraph_format.space_before = Pt(0)
-    p_name.paragraph_format.space_after = Pt(4)
+    p_name.paragraph_format.space_after = Pt(3)
     p_name.paragraph_format.line_spacing = 1.15
     r_name = p_name.add_run(MASTER_STATIC['name'])
     r_name.bold = True
@@ -152,7 +152,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_sub.paragraph_format.space_before = Pt(0)
-    p_sub.paragraph_format.space_after = Pt(4)
+    p_sub.paragraph_format.space_after = Pt(3)
     p_sub.paragraph_format.line_spacing = 1.15
     
     r_f1 = p_sub.add_run(f1)
@@ -315,7 +315,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r = p.add_run(title)
         r.bold = True
         r.font.name = 'Calibri'
-        r.font.size = Pt(11.5)
+        r.font.size = Pt(11)
         tcPr = cell._tc.get_or_add_tcPr()
         tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="E9ECEF"/>'))
 
@@ -467,24 +467,24 @@ def get_pdf_styles():
     styles = getSampleStyleSheet()
     
     title_style = ParagraphStyle('DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER, spaceAfter=8)
-    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceBefore=6, spaceAfter=6)
-    salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceAfter=6)
+    subject_style = ParagraphStyle('Subject', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceBefore=5, spaceAfter=5)
+    salutation_style = ParagraphStyle('Salutation', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, textColor=colors.HexColor('#111827'), spaceAfter=5)
     body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, spaceAfter=6)
-    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=13, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, leftIndent=20, rightIndent=8, firstLineIndent=-12, spaceAfter=5)
+    bullet_style = ParagraphStyle('Bullet', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=13, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY, leftIndent=18, rightIndent=6, firstLineIndent=-12, spaceAfter=5)
     sign_style = ParagraphStyle('Sign', parent=styles['Normal'], fontName='Helvetica', fontSize=9.5, leading=13.5, textColor=colors.HexColor('#111827'), spaceBefore=6)
     
     th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor('#002B49'), alignment=TA_CENTER)
-    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12, textColor=colors.HexColor('#1F2937'), alignment=TA_LEFT)
-    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=12, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
+    td_left = ParagraphStyle('TDL', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, leading=11.2, textColor=colors.HexColor('#111827'), alignment=TA_LEFT)
+    td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=11.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
     
     # 1:1 Matched Full-Page Resume Typography
-    r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=3)
-    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=4, textColor=colors.HexColor('#111827'))
-    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=5, textColor=colors.HexColor('#374151'))
+    r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=2.5)
+    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=3, textColor=colors.HexColor('#111827'))
+    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=4, textColor=colors.HexColor('#374151'))
     
-    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12.5, spaceBefore=5, spaceAfter=3, textColor=colors.HexColor('#000000'))
-    r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=11.8, alignment=TA_JUSTIFY, spaceAfter=4, textColor=colors.HexColor('#1F2937'))
-    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=11.5, alignment=TA_JUSTIFY, leftIndent=12, firstLineIndent=-8, spaceAfter=3.5, textColor=colors.HexColor('#1F2937'))
+    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=12.5, spaceBefore=4.5, spaceAfter=2, textColor=colors.HexColor('#000000'))
+    r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName='Helvetica', fontSize=9.2, leading=11.8, alignment=TA_JUSTIFY, spaceAfter=3, textColor=colors.HexColor('#1F2937'))
+    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName='Helvetica', fontSize=9.0, leading=11.6, alignment=TA_JUSTIFY, leftIndent=12, firstLineIndent=-8, spaceAfter=3.5, textColor=colors.HexColor('#1F2937'))
     
     col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, alignment=TA_CENTER, textColor=colors.HexColor('#002B49'))
     col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName='Helvetica', fontSize=8.2, leading=10.2, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
@@ -520,7 +520,7 @@ def get_cover_letter_story(cover_data, st_dict):
 def get_match_matrix_story(cover_data, st_dict):
     story = [
         Paragraph("MATCH MATRIX", st_dict["title"]),
-        Spacer(1, 6)
+        Spacer(1, 4)
     ]
     matrix_rows = [[
         Paragraph("<b>Target Job Requirement / Focus Domain</b>", st_dict["th"]),
@@ -528,7 +528,7 @@ def get_match_matrix_story(cover_data, st_dict):
     ]]
     for item in cover_data.get("matrix_items", []):
         matrix_rows.append([
-            Paragraph(f"<b>{item.get('requirement_title', '')}</b><br/><font color='#4B5563'>{item.get('requirement_desc', '')}</font>", st_dict["td_left"]),
+            Paragraph(item.get('requirement_title', ''), st_dict["td_left"]),
             Paragraph(item.get('match_desc', ''), st_dict["td_right"])
         ])
     matrix_table = Table(matrix_rows, colWidths=[2.5 * inch, 5.0 * inch])
@@ -537,10 +537,10 @@ def get_match_matrix_story(cover_data, st_dict):
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
     ]))
     story.append(matrix_table)
     return story
@@ -561,9 +561,9 @@ def get_resume_story(tailored_data, st_dict):
     story.append(Paragraph("<b>EXECUTIVE SUMMARY</b>", st_dict["r_h"]))
     story.append(Paragraph(tailored_data.get("executive_summary", ""), st_dict["r_body"]))
     
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS</b>", st_dict["r_h"]))
-    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#000000'), spaceBefore=1, spaceAfter=4))
+    story.append(HRFlowable(width="100%", thickness=0.8, color=colors.HexColor('#000000'), spaceBefore=1, spaceAfter=3))
     
     for cap in tailored_data.get("capabilities", []):
         parts = cap.split(":", 1)
@@ -572,17 +572,17 @@ def get_resume_story(tailored_data, st_dict):
         else:
             story.append(Paragraph(f"• {cap}", st_dict["r_bullet"]))
             
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>HONORS & RECOGNITION</b>", st_dict["r_h"]))
     for h in MASTER_STATIC['honors']:
         story.append(Paragraph(f"• {h}", st_dict["r_bullet"]))
         
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>EDUCATION</b>", st_dict["r_h"]))
     for edu in MASTER_STATIC['education']:
         story.append(Paragraph(f"• <b>{edu['degree']}</b> – {edu['details']}", st_dict["r_bullet"]))
         
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 2))
     story.append(Paragraph("<b>LANGUAGES & INTERESTS :</b>", st_dict["r_h"]))
     story.append(Paragraph(MASTER_STATIC['languages'], st_dict["r_body"]))
     story.append(Paragraph(MASTER_STATIC['interests'], st_dict["r_body"]))
@@ -590,7 +590,7 @@ def get_resume_story(tailored_data, st_dict):
     # ---------------- PAGE 2 BOUNDARY ----------------
     story.append(PageBreak())
     story.append(Paragraph("<b>PROFESSIONAL EXPERIENCE</b>", st_dict["r_h"]))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 2))
     
     c1_txt = (
         "<b>Britannia Industries Ltd | 2007 – 2011</b><br/>"
@@ -667,19 +667,19 @@ def get_resume_story(tailored_data, st_dict):
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('LEFTPADDING', (0, 0), (-1, -1), 5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
     ]))
     story.append(exp_table)
     
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 4))
     story.append(Paragraph("<b>TECHNOLOGY STACK & DIGITAL ARCHITECTURE:</b>", st_dict["r_h"]))
     for category, stack in MASTER_STATIC['tech_stack'].items():
         story.append(Paragraph(f"• <b>{category}:</b> {stack}", st_dict["r_bullet"]))
         
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     why_text = (
         "<b><u>WHY HIRE ME:</u></b> A rare profile combining Core FMCG Operator <font color='#00B0F0'><b>+</b></font> "
         "Digital FMCG Disruption pioneer <font color='#00B0F0'><b>+</b></font> "
@@ -693,7 +693,7 @@ def get_resume_story(tailored_data, st_dict):
 
 def create_cover_letter_match_matrix_pdf(cover_data):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=36, bottomMargin=36)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=30, bottomMargin=30)
     st_dict = get_pdf_styles()
     story = get_cover_letter_story(cover_data, st_dict) + [PageBreak()] + get_match_matrix_story(cover_data, st_dict)
     doc.build(story)
@@ -702,7 +702,7 @@ def create_cover_letter_match_matrix_pdf(cover_data):
 
 def create_resume_pdf(tailored_data):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=26, bottomMargin=26)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=22, bottomMargin=22)
     st_dict = get_pdf_styles()
     story = get_resume_story(tailored_data, st_dict)
     doc.build(story)
@@ -711,7 +711,7 @@ def create_resume_pdf(tailored_data):
 
 def create_combined_application_pdf(cover_data, tailored_data):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=26, bottomMargin=26)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=22, bottomMargin=22)
     st_dict = get_pdf_styles()
     story = (
         get_cover_letter_story(cover_data, st_dict) +
@@ -803,7 +803,7 @@ def populate_cover_letter_docx_page(doc, cover_data):
 def populate_match_matrix_docx_page(doc, cover_data):
     p_mtitle = doc.add_paragraph()
     p_mtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_mtitle.paragraph_format.space_after = Pt(10)
+    p_mtitle.paragraph_format.space_after = Pt(8)
     r_mt = p_mtitle.add_run("MATCH MATRIX")
     r_mt.bold = True
     r_mt.font.name = 'Calibri'
@@ -840,23 +840,20 @@ def populate_match_matrix_docx_page(doc, cover_data):
         
         p0 = row_cells[0].paragraphs[0]
         p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        p0.paragraph_format.space_before = Pt(4)
-        p0.paragraph_format.space_after = Pt(4)
-        r_rt = p0.add_run(item.get('requirement_title', '') + "\n")
+        p0.paragraph_format.space_before = Pt(3)
+        p0.paragraph_format.space_after = Pt(3)
+        r_rt = p0.add_run(item.get('requirement_title', ''))
         r_rt.bold = True
         r_rt.font.name = 'Calibri'
-        r_rt.font.size = Pt(10)
-        r_rd = p0.add_run(item.get('requirement_desc', ''))
-        r_rd.font.name = 'Calibri'
-        r_rd.font.size = Pt(10)
+        r_rt.font.size = Pt(9.5)
         
         p1 = row_cells[1].paragraphs[0]
         p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p1.paragraph_format.space_before = Pt(4)
-        p1.paragraph_format.space_after = Pt(4)
+        p1.paragraph_format.space_before = Pt(3)
+        p1.paragraph_format.space_after = Pt(3)
         r_mt = p1.add_run(item.get('match_desc', ''))
         r_mt.font.name = 'Calibri'
-        r_mt.font.size = Pt(10)
+        r_mt.font.size = Pt(9.5)
 
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -871,8 +868,8 @@ def populate_match_matrix_docx_page(doc, cover_data):
 def create_cover_letter_match_matrix_docx(cover_data):
     doc = Document()
     for section in doc.sections:
-        section.top_margin = Inches(0.5)
-        section.bottom_margin = Inches(0.5)
+        section.top_margin = Inches(0.45)
+        section.bottom_margin = Inches(0.45)
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)
     populate_cover_letter_docx_page(doc, cover_data)
@@ -886,8 +883,8 @@ def create_cover_letter_match_matrix_docx(cover_data):
 def create_combined_application_docx(cover_data, tailored_data):
     doc = Document()
     for section in doc.sections:
-        section.top_margin = Inches(0.45)
-        section.bottom_margin = Inches(0.45)
+        section.top_margin = Inches(0.40)
+        section.bottom_margin = Inches(0.40)
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)
     
@@ -1073,7 +1070,7 @@ if generate_btn:
                 7. ATS MATCH SCORE (INTEGER 88-97):
                    - "ats_match_score": Integer reflecting alignment with the provided JD.
 
-                8. COVER LETTER & MATCH MATRIX:
+                8. COVER LETTER & MATCH MATRIX (STRICTLY ONE PAGE EACH):
                    - "subject_line": "Application for [Target Role] - [Target Company]"
                    - "cover_para_1": Authoritative opening explicitly referencing the company name, role title, and candidate's 23+ year track record.
                    - "cover_para_2": Direct alignment with the target company's specific commercial and digital priorities based on JD and special instructions.
@@ -1083,8 +1080,10 @@ if generate_btn:
                      3) Measurable P&L & Operational ROI: ...
                      4) Cross-Functional Leadership & Partner Strategy: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
-                   - "matrix_items": Array of EXACTLY 7 to 8 comprehensive competency rows mapping every major JD pillar to candidate evidence.
-                     IMPORTANT: In "match_desc", write a direct, comprehensive narrative paragraph demonstrating evidence WITHOUT adding a redundant bold title or hyphen at the beginning.
+                   - "matrix_items": Array of EXACTLY 6 to 7 concise competency rows mapping JD pillars to candidate evidence.
+                     IMPORTANT FOR MATCH MATRIX:
+                     * "requirement_title": Concise statement of the requirement only. Do NOT repeat or elaborate here.
+                     * "match_desc": Direct, concise narrative paragraph demonstrating evidence WITHOUT redundant bold prefixes.
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -1114,7 +1113,6 @@ if generate_btn:
                     "matrix_items": [
                       {{
                         "requirement_title": "string",
-                        "requirement_desc": "string",
                         "match_desc": "string"
                       }}
                     ]
