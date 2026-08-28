@@ -155,7 +155,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (ZERO SPILLOVER, 1:1 REPRODUCED PAGE 1 & 2)
+# 3. WORD RESUME ENGINE (PERFECT PAGE 1 SPACING & ALIGNMENT)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -163,12 +163,12 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style.font.size = Pt(10)
     style.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    def apply_xml_spacing(p, before_pt=0, after_pt=6, line_twips=278):
+    def apply_xml_spacing(p, before_pt=0, after_pt=8, line_twips=278):
         pPr = p._p.get_or_add_pPr()
         spPr = parse_xml(f'<w:spacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:before="{int(before_pt*20)}" w:after="{int(after_pt*20)}" w:line="{line_twips}" w:lineRule="auto"/>')
         pPr.append(spPr)
 
-    def add_heading(title, space_before=0, space_after=4, line_border_above=False, is_multiple=False):
+    def add_heading(title, space_before=0, space_after=8, line_border_above=False, is_multiple=False):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
         if is_multiple:
@@ -179,7 +179,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         if line_border_above:
             pPr = p._p.get_or_add_pPr()
             pBdr = parse_xml(r'<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-                             r'<w:top w:val="single" w:sz="6" w:space="3" w:color="000000"/>'
+                             r'<w:top w:val="single" w:sz="6" w:space="4" w:color="000000"/>'
                              r'</w:pBdr>')
             pPr.append(pBdr)
             
@@ -189,7 +189,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    # 1. Header Block (Centered, Before: 0pt, After: 6pt, Multiple: 1.16)
+    # 1. Header Block (Centered, Before: 0pt, After: 8pt, Multiple: 1.16)
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     apply_xml_spacing(p_name, before_pt=0, after_pt=0, line_twips=278)
@@ -203,7 +203,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_sub, before_pt=0, after_pt=6, line_twips=278)
+    apply_xml_spacing(p_sub, before_pt=0, after_pt=8, line_twips=278)
     
     r_f1 = p_sub.add_run(f1)
     r_f1.bold = True
@@ -227,7 +227,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     c = MASTER_STATIC['contact']
     p_contact = doc.add_paragraph()
     p_contact.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_contact, before_pt=0, after_pt=6, line_twips=278)
+    apply_xml_spacing(p_contact, before_pt=0, after_pt=8, line_twips=278)
     
     r_c1 = p_contact.add_run(f"{c['location']} | {c['phone']} | ")
     r_c1.font.name = 'Calibri'
@@ -256,26 +256,26 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    # 2. Executive Summary (Justified, Before: 0pt, After: 5pt, Multiple: 1.16)
-    add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=2, line_border_above=False, is_multiple=True)
+    # 2. Executive Summary (Space after heading: 8pt = one full line)
+    add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=8, line_border_above=False, is_multiple=True)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    apply_xml_spacing(sp, before_pt=0, after_pt=5, line_twips=278)
+    apply_xml_spacing(sp, before_pt=0, after_pt=6, line_twips=278)
     r_sum = sp.add_run(tailored_data.get("executive_summary", ""))
     r_sum.font.name = 'Calibri'
     r_sum.font.size = Pt(10)
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Capabilities (Border Above, Left: -0.06", Hanging: 0.25", After: 4pt, Single)
-    add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=3, space_after=4, line_border_above=True, is_multiple=False)
+    # 3. Capabilities (Border Above, Left: 0.20", Hanging: 0.25", Space after heading: 8pt)
+    add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
     
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph()
-        cp.paragraph_format.left_indent = Inches(-0.06)
+        cp.paragraph_format.left_indent = Inches(0.20)
         cp.paragraph_format.first_line_indent = Inches(-0.25)
         cp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        apply_xml_spacing(cp, before_pt=0, after_pt=4, line_twips=240)
+        apply_xml_spacing(cp, before_pt=0, after_pt=4.5, line_twips=240)
         
         r_bullet = cp.add_run("•\t")
         r_bullet.font.name = 'Calibri'
@@ -295,15 +295,15 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
 
-    # 4. Honors (Border Above, Left: 0.25", Hanging: 0.25", No space between bullets, Space after section: 5pt)
-    add_heading("HONORS & RECOGNITION", space_before=3, space_after=3, line_border_above=True, is_multiple=False)
+    # 4. Honors (Border Above, Space after heading: 8pt, Left: 0.25", Hanging: 0.25")
+    add_heading("HONORS & RECOGNITION", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
     for idx, h in enumerate(MASTER_STATIC['honors']):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         p.paragraph_format.left_indent = Inches(0.25)
         p.paragraph_format.first_line_indent = Inches(-0.25)
         is_last = (idx == len(MASTER_STATIC['honors']) - 1)
-        apply_xml_spacing(p, before_pt=0, after_pt=5 if is_last else 0, line_twips=240)
+        apply_xml_spacing(p, before_pt=0, after_pt=6 if is_last else 0, line_twips=240)
         
         r_bullet = p.add_run("•\t")
         r_bullet.font.name = 'Calibri'
@@ -320,15 +320,15 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_t.font.name = 'Calibri'
             r_t.font.size = Pt(10)
 
-    # 5. Education (Left: 0.25", Hanging: 0.25", No space between bullets, Space after section: 5pt)
-    add_heading("EDUCATION", space_before=0, space_after=3, line_border_above=False, is_multiple=False)
+    # 5. Education (Space after heading: 8pt, Left: 0.25", Hanging: 0.25")
+    add_heading("EDUCATION", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     for idx, edu in enumerate(MASTER_STATIC['education']):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         p.paragraph_format.left_indent = Inches(0.25)
         p.paragraph_format.first_line_indent = Inches(-0.25)
         is_last = (idx == len(MASTER_STATIC['education']) - 1)
-        apply_xml_spacing(p, before_pt=0, after_pt=5 if is_last else 0, line_twips=240)
+        apply_xml_spacing(p, before_pt=0, after_pt=6 if is_last else 0, line_twips=240)
         
         r_bullet = p.add_run("•\t")
         r_bullet.font.name = 'Calibri'
@@ -342,8 +342,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # 6. Languages & Interests (Left: 0.25", Hanging: 0.25", No space between bullets)
-    add_heading("LANGUAGES & INTERESTS :", space_before=0, space_after=3, line_border_above=False, is_multiple=False)
+    # 6. Languages & Interests (Space after heading: 8pt, Left: 0.25", Hanging: 0.25")
+    add_heading("LANGUAGES & INTERESTS :", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     
     p_lang1 = doc.add_paragraph()
     p_lang1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -372,8 +372,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     # ---------------- PAGE 2 BOUNDARY ----------------
     doc.add_page_break()
 
-    # Section Heading: Alignment Justified, Before 0pt, After 6pt, Single
-    add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=6, line_border_above=False, is_multiple=False)
+    # Section Heading: Alignment Justified, Before 0pt, After 8pt, Single
+    add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     
     # 3-Column Experience Table
     table = doc.add_table(rows=2, cols=3)
@@ -496,10 +496,10 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     table._tbl.tblPr.append(tblBorders)
 
     # 7. Tech Stack
-    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=0, space_after=6, line_border_above=False, is_multiple=False)
+    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph()
-        tp.paragraph_format.left_indent = Inches(-0.06)
+        tp.paragraph_format.left_indent = Inches(0.20)
         tp.paragraph_format.first_line_indent = Inches(-0.25)
         tp.alignment = WD_ALIGN_PARAGRAPH.LEFT
         apply_xml_spacing(tp, before_pt=0, after_pt=4, line_twips=240)
@@ -518,7 +518,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_st.font.size = Pt(10)
 
     # 8. Why Hire Me
-    add_heading("WHY HIRE ME", space_before=0, space_after=2, line_border_above=False, is_multiple=False)
+    add_heading("WHY HIRE ME", space_before=0, space_after=4, line_border_above=False, is_multiple=False)
     
     p_why = doc.add_paragraph()
     p_why.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -546,7 +546,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. REPORTLAB ELEMENTS GENERATOR (PAGE-FILLING CALIBRI RESUME & SUITE)
+# 4. REPORTLAB ELEMENTS GENERATOR (CALIBRI RESUME & SUITE)
 # ==============================================================================
 def get_pdf_styles():
     styles = getSampleStyleSheet()
@@ -563,15 +563,16 @@ def get_pdf_styles():
     td_right = ParagraphStyle('TDR', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=9.5, leading=12.5, textColor=colors.HexColor('#1F2937'), alignment=TA_JUSTIFY)
     
     r_name_style = ParagraphStyle('RName', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=0)
-    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=5, textColor=colors.HexColor('#111827'))
-    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_CENTER, spaceAfter=5, textColor=colors.HexColor('#374151'))
+    r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=6, textColor=colors.HexColor('#111827'))
+    r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_CENTER, spaceAfter=6, textColor=colors.HexColor('#374151'))
     
-    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12, spaceBefore=3, spaceAfter=2, textColor=colors.HexColor('#000000'), alignment=TA_LEFT)
+    # 8pt space after each heading (one full line)
+    r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12, spaceBefore=3, spaceAfter=6, textColor=colors.HexColor('#000000'), alignment=TA_LEFT)
     r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_JUSTIFY, spaceAfter=4, textColor=colors.HexColor('#1F2937'))
     
-    # Left Indent: -0.06" equivalent (~10pt), hanging
-    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_LEFT, leftIndent=12, firstLineIndent=-12, spaceAfter=3, textColor=colors.HexColor('#1F2937'))
-    # Bottom bullets indent (0.25" equivalent ~18pt), tight spacing
+    # Capabilities Indent: 0.20" (~14pt)
+    r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_LEFT, leftIndent=14, firstLineIndent=-12, spaceAfter=3.5, textColor=colors.HexColor('#1F2937'))
+    # Bottom list indent: 0.25" (~18pt), tight spacing within section
     r_bottom_bullet_style = ParagraphStyle('RBotBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_JUSTIFY, leftIndent=18, firstLineIndent=-12, spaceAfter=1, textColor=colors.HexColor('#1F2937'))
     
     col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12, alignment=TA_LEFT, textColor=colors.HexColor('#002B49'))
@@ -650,7 +651,7 @@ def get_resume_story(tailored_data, st_dict):
     story.append(Paragraph("<b>EXECUTIVE SUMMARY</b>", st_dict["r_h"]))
     story.append(Paragraph(tailored_data.get("executive_summary", ""), st_dict["r_body"]))
     
-    story.append(HRFlowable(width="100%", thickness=0.75, color=colors.HexColor('#000000'), spaceBefore=2, spaceAfter=3))
+    story.append(HRFlowable(width="100%", thickness=0.75, color=colors.HexColor('#000000'), spaceBefore=2, spaceAfter=4))
     story.append(Paragraph("<b>EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS</b>", st_dict["r_h"]))
     
     for cap in tailored_data.get("capabilities", []):
@@ -660,7 +661,7 @@ def get_resume_story(tailored_data, st_dict):
         else:
             story.append(Paragraph(f"• {cap}", st_dict["r_bullet"]))
             
-    story.append(HRFlowable(width="100%", thickness=0.75, color=colors.HexColor('#000000'), spaceBefore=2, spaceAfter=3))
+    story.append(HRFlowable(width="100%", thickness=0.75, color=colors.HexColor('#000000'), spaceBefore=2, spaceAfter=4))
     story.append(Paragraph("<b>HONORS & RECOGNITION</b>", st_dict["r_h"]))
     for h in MASTER_STATIC['honors']:
         if "https://" in h:
@@ -1144,10 +1145,14 @@ if generate_btn:
                    - "header_focus_1": Target leadership title matching the JD (e.g. "Commercial & Digital Transformation Director", "E-Commerce & Commercial Director", "Global Distributor Management Director"). Max 36 chars.
                    - "header_focus_2": Specialized domain focus matching the JD (e.g. "Enterprise Sales Technology Leader", "Global Distributor Governance Leader", "Omnichannel RTM & Digital Execution"). Max 40 chars.
 
-                3. EXECUTIVE SUMMARY (EXACT 135-145 WORDS / 8 LINES):
-                   - Write an authoritative, rich executive summary of EXACTLY 135 to 145 words dynamically tailored to the role and company.
-                   - Emphasize relevant commercial, distributor management, and transformation capabilities directly addressing the JD requirements.
-                   - Retain core metrics ($100M+ P&L, 8,000+ retailers, 10+ Tier-1 CPG logos: P&G, Nestlé, GSK, Coca-Cola, ~40% logistics optimization, ~20% productivity uplifts).
+                3. EXECUTIVE SUMMARY (STRICTLY 155 TO 170 WORDS / EXACTLY 8 FULL JUSTIFIED LINES):
+                   - Write an authoritative, high-impact, passionate executive summary of EXACTLY 155 to 170 words tailored directly to the target mandate and company.
+                   - It must completely fill 8 full justified lines in Calibri 10pt (line spacing multiple 1.16).
+                   - Deliver a compelling, high-conviction narrative covering:
+                     * 23+ years driving FMCG commercial strategy, digital commerce, and enterprise sales technology across MEA, India, and Asia.
+                     * Rare 360° vantage combining principal-led FMCG commercial leadership, digital distribution entrepreneurship, and enterprise SaaS transformations with $100M+ P&L/portfolio ownership.
+                     * Founding & scaling UAE's premier digital B2B2C distribution ecosystem (Conektr), aggregating extensive catalogs across ambient, packaged goods, and personal care brands to 8,000+ retailers.
+                     * Leading enterprise technology advisory & SFA/DMS modernizations (FieldAssist & Ivy Mobility) for 10+ Tier-1 CPG leaders (P&G, Nestlé, GSK, Coca-Cola), delivering ~40% logistics cost reduction, >50% drop in coverage cost, and ~20% productivity uplifts.
 
                 4. CAPABILITY ORDERING (PRIORITIZATION):
                    - Rank the 5 capability keys based on the JD's highest priorities (place the top 2 matching keys first):
