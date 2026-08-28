@@ -155,7 +155,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (LOCKED PAGE 1 & UPDATED PAGE 2 TABLE)
+# 3. WORD RESUME ENGINE (LOCKED PAGE 1 & REVISED PAGE 2 EXPERIENCE LAYOUT)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -168,7 +168,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         spPr = parse_xml(f'<w:spacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:before="{int(before_pt*20)}" w:after="{int(after_pt*20)}" w:line="{line_twips}" w:lineRule="auto"/>')
         pPr.append(spPr)
 
-    def add_heading(title, space_before=0, space_after=8, line_border_above=False, is_multiple=False):
+    def add_heading(title, space_before=0, space_after=8, line_border_above=False, is_multiple=False, is_underline=False):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
         if is_multiple:
@@ -185,12 +185,12 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             
         r = p.add_run(title.upper() if title != "LANGUAGES & INTERESTS :" else title)
         r.bold = True
+        r.underline = is_underline
         r.font.name = 'Calibri'
         r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    # ---------------- PAGE 1 (LOCKED) ----------------
-    # 1. Header Block (Centered, Before: 0pt, After: 8pt, Multiple: 1.16)
+    # ---------------- PAGE 1 (STRICTLY LOCKED) ----------------
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     apply_xml_spacing(p_name, before_pt=0, after_pt=0, line_twips=278)
@@ -257,7 +257,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    # 2. Executive Summary (Space after heading: 8pt)
+    # 2. Executive Summary (Locked)
     add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=8, line_border_above=False, is_multiple=True)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -268,9 +268,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    # 3. Capabilities (Border Above, Left: 0.20", Hanging: 0.25", Space after heading: 8pt)
+    # 3. Capabilities (Locked)
     add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
-    
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph()
         cp.paragraph_format.left_indent = Inches(0.20)
@@ -296,7 +295,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
 
-    # 4. Honors (Border Above, Space after heading: 8pt, Left: 0.45", Hanging: 0.20")
+    # 4. Honors (Locked)
     add_heading("HONORS & RECOGNITION", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
     for idx, h in enumerate(MASTER_STATIC['honors']):
         p = doc.add_paragraph()
@@ -321,7 +320,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_t.font.name = 'Calibri'
             r_t.font.size = Pt(10)
 
-    # 5. Education (Space after heading: 8pt, Left: 0.45", Hanging: 0.20")
+    # 5. Education (Locked)
     add_heading("EDUCATION", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     for idx, edu in enumerate(MASTER_STATIC['education']):
         p = doc.add_paragraph()
@@ -343,9 +342,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # 6. Languages & Interests (Space after heading: 8pt, Left: 0.45", Hanging: 0.20")
+    # 6. Languages & Interests (Locked)
     add_heading("LANGUAGES & INTERESTS :", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
-    
     p_lang1 = doc.add_paragraph()
     p_lang1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     p_lang1.paragraph_format.left_indent = Inches(0.45)
@@ -373,10 +371,10 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     # ---------------- PAGE 2 BOUNDARY ----------------
     doc.add_page_break()
 
-    # Section Heading: Alignment Left/Justified, Before 0pt, After 8pt (full line space)
+    # Section Heading: Alignment Left/Justified, Before 0pt, After 8pt (exact single line space)
     add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     
-    # 3-Column Experience Table (Exact width, top aligned, 12pt header middle aligned)
+    # 3-Column Experience Table
     table = doc.add_table(rows=2, cols=3)
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     table.autofit = False
@@ -391,14 +389,14 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             cell.width = col_widths[i]
             cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
-    # Headers: Font 12 Calibri, Centered / Middle aligned with space on all sides
+    # Table Header Row: 12pt Bold Centered, Single line gap
     hdr_titles = ["Traditional FMCG Operator", "Digital FMCG Distribution", "Distribution Transformation"]
     for i, title in enumerate(hdr_titles):
         cell = table.rows[0].cells[i]
         cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p = cell.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        apply_xml_spacing(p, before_pt=4, after_pt=4, line_twips=240)
+        apply_xml_spacing(p, before_pt=3, after_pt=3, line_twips=240)
         r = p.add_run(title)
         r.bold = True
         r.font.name = 'Calibri'
@@ -410,7 +408,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         cell.text = ""
         for idx, item in enumerate(item_list):
             p = cell.add_paragraph()
-            apply_xml_spacing(p, before_pt=item.get("space_before", 0), after_pt=item.get("space_after", 2.5), line_twips=220)
+            apply_xml_spacing(p, before_pt=item.get("space_before", 0), after_pt=item.get("space_after", 2), line_twips=220)
             
             if item.get("is_bullet", False):
                 p.paragraph_format.left_indent = Inches(0.18)
@@ -430,26 +428,33 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             if highlight_changes and item.get("highlight", False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
+    # Column 1 Data: Set Britannia + Roles in direct succession with 1 line space before and after
     c0_items = [
-        {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 4},
+        {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 2},
         {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
         {"text": "Regional Sales & Capability Head- India", "bold": True, "size": 10, "space_after": 4},
         {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 10},
         {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 10},
         {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 10},
         {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 10},
-        {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 10, "space_after": 4},
-        {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 6},
+        {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 10, "space_after": 3},
+        {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 5},
         {"text": "Commercial & Training Roles –", "bold": True, "size": 10, "space_after": 4},
         {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 10},
         {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 10}
     ]
 
+    # Optional Column 1 dynamic achievement injection to balance height against Column 2
+    c0_extra = tailored_data.get("column_1_extra_bullet", "")
+    if c0_extra and c0_extra.strip():
+        c0_items.insert(7, {"text": c0_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
+
+    # Column 2 Data: Digital FMCG Principal (Bold) + Conektr (Bold), 1 line gap, CEO & Founder, May 2016-Aug 2024
     conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
     c1_items = [
-        {"text": "Digital FMCG Principal / Distributor", "size": 10, "space_before": 4},
+        {"text": "Digital FMCG Principal / Distributor", "bold": True, "size": 10, "space_before": 2},
+        {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10, "space_after": 4},
         {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10},
-        {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10},
         {"text": "May 2016 – Aug 2024", "size": 10, "space_after": 4},
         {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 10},
         {"text": conektr_cat, "is_bullet": True, "size": 10, "highlight": True},
@@ -460,15 +465,16 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 10}
     ]
 
+    # Column 3 Data: Post Exit immediately at top, 1 line space, Transformation Advisor, TransCPG...
     c2_items = [
-        {"text": "Post Exit –", "size": 10, "space_before": 4},
+        {"text": "Post Exit –", "size": 10, "space_before": 2, "space_after": 3},
         {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
         {"text": "TransCPG Inc. &", "bold": True, "size": 10},
         {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_after": 4},
         {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 10},
         {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 10},
-        {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 10, "space_after": 4},
-        {"text": "Business Head – MEA", "bold": True, "size": 10, "space_before": 6},
+        {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 10, "space_after": 3},
+        {"text": "Business Head – MEA", "bold": True, "size": 10, "space_before": 5},
         {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_after": 4},
         {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 10},
         {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 10},
@@ -498,7 +504,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     )
     table._tbl.tblPr.append(tblBorders)
 
-    # 7. Tech Stack (Space before heading: 8pt after table, Space after heading: 8pt)
+    # 7. Tech Stack (Space before heading: 8pt, Space after heading: 8pt)
     add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=8, space_after=8, line_border_above=False, is_multiple=False)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph()
@@ -520,8 +526,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_st.font.name = 'Calibri'
         r_st.font.size = Pt(10)
 
-    # 8. Why Hire Me
-    add_heading("WHY HIRE ME", space_before=2, space_after=4, line_border_above=False, is_multiple=False)
+    # 8. Why Hire Me (One line space before heading, Underlined title)
+    add_heading("WHY HIRE ME", space_before=8, space_after=4, line_border_above=False, is_multiple=False, is_underline=True)
     
     p_why = doc.add_paragraph()
     p_why.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -639,7 +645,7 @@ def get_match_matrix_story(cover_data, st_dict):
 def get_resume_story(tailored_data, st_dict):
     story = []
     
-    # ---------------- PAGE 1 ----------------
+    # ---------------- PAGE 1 (LOCKED) ----------------
     story.append(Paragraph(MASTER_STATIC['name'], st_dict["r_name"]))
     f1 = tailored_data.get("header_focus_1", "Sales & Distribution Transformation Director")
     f2 = tailored_data.get("header_focus_2", "Beauty & Personal Care Experience")
@@ -685,8 +691,9 @@ def get_resume_story(tailored_data, st_dict):
     # ---------------- PAGE 2 BOUNDARY ----------------
     story.append(PageBreak())
     story.append(Paragraph("<b>PROFESSIONAL EXPERIENCE</b>", st_dict["r_h"]))
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 2))
     
+    c0_dyn = tailored_data.get("column_1_extra_bullet", "")
     c1_txt = (
         "<b>Britannia Industries Ltd | 2007 – 2011</b><br/>"
         "<b>Regional Sales Head – GCC</b><br/>"
@@ -695,6 +702,10 @@ def get_resume_story(tailored_data, st_dict):
         "• Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.<br/>"
         "• Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.<br/>"
         "• Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.<br/>"
+    )
+    if c0_dyn:
+        c1_txt += f"• {c0_dyn}<br/>"
+    c1_txt += (
         "• Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).<br/><br/>"
         "<b>Airtel | Reliance | Tyco | 2001 – 2007</b><br/>"
         "<b>Commercial & Training Roles –</b><br/><br/>"
@@ -705,9 +716,9 @@ def get_resume_story(tailored_data, st_dict):
     conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
     c1_dyn = tailored_data.get("column_2_extra_bullet", "")
     c2_txt = (
-        "Digital FMCG Principal / Distributor<br/>"
+        "<b>Digital FMCG Principal / Distributor</b><br/>"
+        "<b>Conektr Tech Global Ltd | UAE & India</b><br/><br/>"
         "<b>Chief Executive Officer & Founder</b><br/>"
-        "<b>Conektr Tech Global Ltd | UAE & India</b><br/>"
         "May 2016 – Aug 2024<br/><br/>"
         "• Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.<br/>"
         f"• {conektr_cat}<br/>"
@@ -724,7 +735,7 @@ def get_resume_story(tailored_data, st_dict):
     
     c2_dyn = tailored_data.get("column_3_extra_bullet", "")
     c3_txt = (
-        "Post Exit –<br/>"
+        "Post Exit –<br/><br/>"
         "<b>Transformation Advisor (Director)</b><br/>"
         "<b>TransCPG Inc. & FieldAssist | 2025 – Present</b><br/><br/>"
         "• Board Member guiding global operations scaling & platform build across FMCG principals & distributors.<br/>"
@@ -763,10 +774,10 @@ def get_resume_story(tailored_data, st_dict):
         ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 1), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#000000')),
-        ('TOPPADDING', (0, 0), (-1, 0), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
-        ('TOPPADDING', (0, 1), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, 0), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+        ('TOPPADDING', (0, 1), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 3),
         ('LEFTPADDING', (0, 0), (-1, -1), 4),
         ('RIGHTPADDING', (0, 0), (-1, -1), 4),
     ]))
@@ -777,8 +788,8 @@ def get_resume_story(tailored_data, st_dict):
     for category, stack in MASTER_STATIC['tech_stack'].items():
         story.append(Paragraph(f"• <b>{category}:</b> {stack}", st_dict["r_bullet"]))
         
-    story.append(Spacer(1, 2.5))
-    story.append(Paragraph("<b>WHY HIRE ME</b>", st_dict["r_h"]))
+    story.append(Spacer(1, 3))
+    story.append(Paragraph("<u><b>WHY HIRE ME</b></u>", st_dict["r_h"]))
     why_text = (
         "A rare profile combining Core FMCG Operator <font color='#00B0F0'><b>+</b></font> "
         "Digital FMCG Disruption pioneer <font color='#00B0F0'><b>+</b></font> "
@@ -1167,6 +1178,7 @@ if generate_btn:
                    - Category aggregation bullet strictly tailored to the products/domain of the target company.
 
                 6. DYNAMIC EXPERIENCE INJECTIONS (STRICT 18 TO 24 WORDS EACH):
+                   - "column_1_extra_bullet": 18-24 words under Britannia / Traditional FMCG regarding Route-to-Market, distributor governance, or commercial expansion aligned with JD, else "".
                    - "column_2_extra_bullet": 18-24 words under Conektr (Digital FMCG) aligned with JD, else "".
                    - "column_3_extra_bullet": 18-24 words under TransCPG/Ivy (Transformation) aligned with JD, else "".
 
@@ -1203,6 +1215,7 @@ if generate_btn:
                   "executive_summary": "string",
                   "capability_order": ["string", "string", "string", "string", "string"],
                   "conektr_category_bullet": "string",
+                  "column_1_extra_bullet": "string",
                   "column_2_extra_bullet": "string",
                   "column_3_extra_bullet": "string",
                   "ats_match_score": 94,
@@ -1413,6 +1426,7 @@ if st.session_state.get("has_results", False):
             st.write("**Header Focus 1:**", tailored_data.get("header_focus_1"))
             st.write("**Header Focus 2:**", tailored_data.get("header_focus_2"))
             st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
+            st.write("**Injected Bullet (Britannia/Traditional):**", tailored_data.get("column_1_extra_bullet"))
             st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
             st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
             st.write("**Match Matrix Rows Generated:**", len(cover_data.get("matrix_items", [])))
