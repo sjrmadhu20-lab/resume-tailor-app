@@ -155,7 +155,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (UPDATED INSET BOTTOM SECTION BULLETS)
+# 3. WORD RESUME ENGINE (LOCKED PAGE 1 & UPDATED PAGE 2 TABLE)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -189,6 +189,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
+    # ---------------- PAGE 1 (LOCKED) ----------------
     # 1. Header Block (Centered, Before: 0pt, After: 8pt, Multiple: 1.16)
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -295,7 +296,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_body.font.name = 'Calibri'
             r_body.font.size = Pt(10)
 
-    # 4. Honors (Border Above, Space after heading: 8pt, Left: 0.45", Hanging: 0.20" -> Bullet starts at 0.25")
+    # 4. Honors (Border Above, Space after heading: 8pt, Left: 0.45", Hanging: 0.20")
     add_heading("HONORS & RECOGNITION", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
     for idx, h in enumerate(MASTER_STATIC['honors']):
         p = doc.add_paragraph()
@@ -320,7 +321,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_t.font.name = 'Calibri'
             r_t.font.size = Pt(10)
 
-    # 5. Education (Space after heading: 8pt, Left: 0.45", Hanging: 0.20" -> Bullet starts at 0.25")
+    # 5. Education (Space after heading: 8pt, Left: 0.45", Hanging: 0.20")
     add_heading("EDUCATION", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     for idx, edu in enumerate(MASTER_STATIC['education']):
         p = doc.add_paragraph()
@@ -342,7 +343,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_t.font.name = 'Calibri'
         r_t.font.size = Pt(10)
 
-    # 6. Languages & Interests (Space after heading: 8pt, Left: 0.45", Hanging: 0.20" -> Bullet starts at 0.25")
+    # 6. Languages & Interests (Space after heading: 8pt, Left: 0.45", Hanging: 0.20")
     add_heading("LANGUAGES & INTERESTS :", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     
     p_lang1 = doc.add_paragraph()
@@ -372,10 +373,10 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     # ---------------- PAGE 2 BOUNDARY ----------------
     doc.add_page_break()
 
-    # Section Heading: Alignment Justified, Before 0pt, After 8pt, Single
+    # Section Heading: Alignment Left/Justified, Before 0pt, After 8pt (full line space)
     add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     
-    # 3-Column Experience Table
+    # 3-Column Experience Table (Exact width, top aligned, 12pt header middle aligned)
     table = doc.add_table(rows=2, cols=3)
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     table.autofit = False
@@ -390,32 +391,34 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             cell.width = col_widths[i]
             cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
+    # Headers: Font 12 Calibri, Centered / Middle aligned with space on all sides
     hdr_titles = ["Traditional FMCG Operator", "Digital FMCG Distribution", "Distribution Transformation"]
     for i, title in enumerate(hdr_titles):
         cell = table.rows[0].cells[i]
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         p = cell.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        apply_xml_spacing(p, before_pt=2, after_pt=2, line_twips=220)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        apply_xml_spacing(p, before_pt=4, after_pt=4, line_twips=240)
         r = p.add_run(title)
         r.bold = True
         r.font.name = 'Calibri'
-        r.font.size = Pt(10)
+        r.font.size = Pt(12)
         tcPr = cell._tc.get_or_add_tcPr()
-        tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="E9ECEF"/>'))
+        tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="DCE6F1"/>'))
 
     def populate_cell_content(cell, item_list):
         cell.text = ""
         for idx, item in enumerate(item_list):
             p = cell.add_paragraph()
-            apply_xml_spacing(p, before_pt=item.get("space_before", 0), after_pt=item.get("space_after", 1.5), line_twips=220)
+            apply_xml_spacing(p, before_pt=item.get("space_before", 0), after_pt=item.get("space_after", 2.5), line_twips=220)
             
             if item.get("is_bullet", False):
-                p.paragraph_format.left_indent = Inches(0.15)
+                p.paragraph_format.left_indent = Inches(0.18)
                 p.paragraph_format.first_line_indent = Inches(-0.15)
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                r_b = p.add_run("• ")
+                r_b = p.add_run("•\t")
                 r_b.font.name = 'Calibri'
-                r_b.font.size = Pt(item.get("size", 9.5))
+                r_b.font.size = Pt(10)
             else:
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 
@@ -423,63 +426,63 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r.bold = item.get("bold", False)
             r.italic = item.get("italic", False)
             r.font.name = 'Calibri'
-            r.font.size = Pt(item.get("size", 9.5))
+            r.font.size = Pt(item.get("size", 10))
             if highlight_changes and item.get("highlight", False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
     c0_items = [
-        {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 9.5, "space_before": 2},
-        {"text": "Regional Sales Head – GCC", "italic": True, "size": 9.5},
-        {"text": "Regional Sales & Capability Head- India", "italic": True, "size": 9.5, "space_after": 3},
-        {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 9.5},
-        {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 9.5},
-        {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 9.5},
-        {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 9.5},
-        {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 9.5, "space_after": 4},
-        {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 9.5, "space_before": 3},
-        {"text": "Commercial & Training Roles –", "italic": True, "size": 9.5, "space_after": 2},
-        {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 9.5},
-        {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 9.5}
+        {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 4},
+        {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
+        {"text": "Regional Sales & Capability Head- India", "bold": True, "size": 10, "space_after": 4},
+        {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 10},
+        {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 10},
+        {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 10},
+        {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 10},
+        {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 10, "space_after": 4},
+        {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 6},
+        {"text": "Commercial & Training Roles –", "bold": True, "size": 10, "space_after": 4},
+        {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 10},
+        {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 10}
     ]
 
     conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
     c1_items = [
-        {"text": "Digital FMCG Principal / Distributor", "italic": True, "size": 9.5, "space_before": 2},
-        {"text": "Chief Executive Officer & Founder", "bold": True, "size": 9.5},
-        {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 9.5},
-        {"text": "May 2016 – Aug 2024", "italic": True, "size": 9.5, "space_after": 3},
-        {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 9.5},
-        {"text": conektr_cat, "is_bullet": True, "size": 9.5, "highlight": True},
-        {"text": "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.", "is_bullet": True, "size": 9.5},
-        {"text": "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.", "is_bullet": True, "size": 9.5},
-        {"text": "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.", "is_bullet": True, "size": 9.5},
-        {"text": "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.", "is_bullet": True, "size": 9.5},
-        {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 9.5}
+        {"text": "Digital FMCG Principal / Distributor", "size": 10, "space_before": 4},
+        {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10},
+        {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10},
+        {"text": "May 2016 – Aug 2024", "size": 10, "space_after": 4},
+        {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 10},
+        {"text": conektr_cat, "is_bullet": True, "size": 10, "highlight": True},
+        {"text": "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.", "is_bullet": True, "size": 10},
+        {"text": "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.", "is_bullet": True, "size": 10},
+        {"text": "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.", "is_bullet": True, "size": 10},
+        {"text": "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.", "is_bullet": True, "size": 10},
+        {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 10}
     ]
 
     c2_items = [
-        {"text": "Post Exit –", "italic": True, "size": 9.5, "space_before": 2},
-        {"text": "Transformation Advisor (Director)", "bold": True, "size": 9.5},
-        {"text": "TransCPG Inc. &", "bold": True, "size": 9.5},
-        {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 9.5, "space_after": 3},
-        {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 9.5},
-        {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 9.5},
-        {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 9.5, "space_after": 4},
-        {"text": "Business Head – MEA", "bold": True, "size": 9.5, "space_before": 3},
-        {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 9.5, "space_after": 2},
-        {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 9.5},
-        {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 9.5},
-        {"text": "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.", "is_bullet": True, "size": 9.5},
-        {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 9.5}
+        {"text": "Post Exit –", "size": 10, "space_before": 4},
+        {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
+        {"text": "TransCPG Inc. &", "bold": True, "size": 10},
+        {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_after": 4},
+        {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 10},
+        {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 10},
+        {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 10, "space_after": 4},
+        {"text": "Business Head – MEA", "bold": True, "size": 10, "space_before": 6},
+        {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_after": 4},
+        {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 10},
+        {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 10},
+        {"text": "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.", "is_bullet": True, "size": 10},
+        {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 10}
     ]
 
     c1_extra = tailored_data.get("column_2_extra_bullet", "")
     if c1_extra and c1_extra.strip():
-        c1_items.insert(7, {"text": c1_extra.strip(), "is_bullet": True, "size": 9.5, "highlight": True})
+        c1_items.insert(7, {"text": c1_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
 
     c2_extra = tailored_data.get("column_3_extra_bullet", "")
     if c2_extra and c2_extra.strip():
-        c2_items.insert(4, {"text": c2_extra.strip(), "is_bullet": True, "size": 9.5, "highlight": True})
+        c2_items.insert(4, {"text": c2_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
 
     populate_cell_content(table.rows[1].cells[0], c0_items)
     populate_cell_content(table.rows[1].cells[1], c1_items)
@@ -487,16 +490,16 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
 
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        r'<w:top w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
-        r'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
-        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
-        r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
+        r'<w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
+        r'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
+        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
         r'</w:tblBorders>'
     )
     table._tbl.tblPr.append(tblBorders)
 
-    # 7. Tech Stack
-    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
+    # 7. Tech Stack (Space before heading: 8pt after table, Space after heading: 8pt)
+    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=8, space_after=8, line_border_above=False, is_multiple=False)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph()
         tp.paragraph_format.left_indent = Inches(0.20)
@@ -518,7 +521,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r_st.font.size = Pt(10)
 
     # 8. Why Hire Me
-    add_heading("WHY HIRE ME", space_before=0, space_after=4, line_border_above=False, is_multiple=False)
+    add_heading("WHY HIRE ME", space_before=2, space_after=4, line_border_above=False, is_multiple=False)
     
     p_why = doc.add_paragraph()
     p_why.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -566,17 +569,15 @@ def get_pdf_styles():
     r_sub_style = ParagraphStyle('RSub', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=9, leading=11.5, alignment=TA_CENTER, spaceAfter=6, textColor=colors.HexColor('#111827'))
     r_contact_style = ParagraphStyle('RCont', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_CENTER, spaceAfter=6, textColor=colors.HexColor('#374151'))
     
-    # 8pt space after each heading (one full line)
     r_h_style = ParagraphStyle('RH', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12, spaceBefore=3, spaceAfter=6, textColor=colors.HexColor('#000000'), alignment=TA_LEFT)
     r_body_style = ParagraphStyle('RBody', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_JUSTIFY, spaceAfter=4, textColor=colors.HexColor('#1F2937'))
     
-    # Capabilities Indent: 0.20" (~14pt)
     r_bullet_style = ParagraphStyle('RBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_LEFT, leftIndent=14, firstLineIndent=-12, spaceAfter=3.5, textColor=colors.HexColor('#1F2937'))
-    # Bottom list indent: 0.45" (~32pt, bullet at ~18pt), tight spacing within section
     r_bottom_bullet_style = ParagraphStyle('RBotBul', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12, alignment=TA_JUSTIFY, leftIndent=32, firstLineIndent=-14, spaceAfter=1, textColor=colors.HexColor('#1F2937'))
     
-    col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=10, leading=12, alignment=TA_LEFT, textColor=colors.HexColor('#002B49'))
-    col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=9.5, leading=11.5, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
+    # Page 2 Table Styles (Header 12pt Bold Centered, Cells 10pt Left)
+    col_hdr_style = ParagraphStyle('ColHdr', parent=styles['Normal'], fontName=FONTS['bold'], fontSize=12, leading=14, alignment=TA_CENTER, textColor=colors.HexColor('#000000'))
+    col_cell_style = ParagraphStyle('ColCell', parent=styles['Normal'], fontName=FONTS['regular'], fontSize=10, leading=12.5, alignment=TA_LEFT, textColor=colors.HexColor('#111827'))
 
     return {
         "title": title_style, "subject": subject_style, "salutation": salutation_style,
@@ -684,19 +685,19 @@ def get_resume_story(tailored_data, st_dict):
     # ---------------- PAGE 2 BOUNDARY ----------------
     story.append(PageBreak())
     story.append(Paragraph("<b>PROFESSIONAL EXPERIENCE</b>", st_dict["r_h"]))
-    story.append(Spacer(1, 2))
+    story.append(Spacer(1, 3))
     
     c1_txt = (
         "<b>Britannia Industries Ltd | 2007 – 2011</b><br/>"
-        "<i>Regional Sales Head – GCC</i><br/>"
-        "<i>Regional Sales & Capability Head- India</i><br/>"
+        "<b>Regional Sales Head – GCC</b><br/>"
+        "<b>Regional Sales & Capability Head- India</b><br/><br/>"
         "• Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.<br/>"
         "• Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.<br/>"
         "• Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.<br/>"
         "• Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.<br/>"
         "• Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).<br/><br/>"
         "<b>Airtel | Reliance | Tyco | 2001 – 2007</b><br/>"
-        "<i>Commercial & Training Roles –</i><br/>"
+        "<b>Commercial & Training Roles –</b><br/><br/>"
         "• Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.<br/>"
         "• Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale."
     )
@@ -704,10 +705,10 @@ def get_resume_story(tailored_data, st_dict):
     conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
     c1_dyn = tailored_data.get("column_2_extra_bullet", "")
     c2_txt = (
-        "<i>Digital FMCG Principal / Distributor</i><br/>"
+        "Digital FMCG Principal / Distributor<br/>"
         "<b>Chief Executive Officer & Founder</b><br/>"
         "<b>Conektr Tech Global Ltd | UAE & India</b><br/>"
-        "<i>May 2016 – Aug 2024</i><br/>"
+        "May 2016 – Aug 2024<br/><br/>"
         "• Founded UAE's 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.<br/>"
         f"• {conektr_cat}<br/>"
         "• Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.<br/>"
@@ -723,10 +724,9 @@ def get_resume_story(tailored_data, st_dict):
     
     c2_dyn = tailored_data.get("column_3_extra_bullet", "")
     c3_txt = (
-        "<i>Post Exit –</i><br/>"
+        "Post Exit –<br/>"
         "<b>Transformation Advisor (Director)</b><br/>"
-        "<b>TransCPG Inc. & FieldAssist</b><br/>"
-        "<b>2025 – Present</b><br/>"
+        "<b>TransCPG Inc. & FieldAssist | 2025 – Present</b><br/><br/>"
         "• Board Member guiding global operations scaling & platform build across FMCG principals & distributors.<br/>"
         "• Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.<br/>"
     )
@@ -735,7 +735,7 @@ def get_resume_story(tailored_data, st_dict):
     c3_txt += (
         "• Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.<br/><br/>"
         "<b>Business Head – MEA</b><br/>"
-        "<b>Ivy Mobility Pte Ltd | 2011 – 2016</b><br/>"
+        "<b>Ivy Mobility Pte Ltd | 2011 – 2016</b><br/><br/>"
         "• Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).<br/>"
         "• Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.<br/>"
         "• Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.<br/>"
@@ -744,9 +744,9 @@ def get_resume_story(tailored_data, st_dict):
     
     exp_table_data = [
         [
-            Paragraph("<b>Traditional FMCG Operator</b>", st_dict["col_hdr"]),
-            Paragraph("<b>Digital FMCG Distribution</b>", st_dict["col_hdr"]),
-            Paragraph("<b>Distribution Transformation</b>", st_dict["col_hdr"])
+            Paragraph("Traditional FMCG Operator", st_dict["col_hdr"]),
+            Paragraph("Digital FMCG Distribution", st_dict["col_hdr"]),
+            Paragraph("Distribution Transformation", st_dict["col_hdr"])
         ],
         [
             Paragraph(c1_txt, st_dict["col_cell"]),
@@ -757,18 +757,22 @@ def get_resume_story(tailored_data, st_dict):
     
     exp_table = Table(exp_table_data, colWidths=[2.63 * inch, 2.63 * inch, 2.63 * inch])
     exp_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9ECEF')),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DCE6F1')),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
+        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#000000')),
+        ('TOPPADDING', (0, 0), (-1, 0), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
+        ('TOPPADDING', (0, 1), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
         ('LEFTPADDING', (0, 0), (-1, -1), 4),
         ('RIGHTPADDING', (0, 0), (-1, -1), 4),
     ]))
     story.append(exp_table)
     
-    story.append(Spacer(1, 3))
+    story.append(Spacer(1, 4))
     story.append(Paragraph("<b>TECHNOLOGY STACK & DIGITAL ARCHITECTURE:</b>", st_dict["r_h"]))
     for category, stack in MASTER_STATIC['tech_stack'].items():
         story.append(Paragraph(f"• <b>{category}:</b> {stack}", st_dict["r_bullet"]))
