@@ -77,6 +77,35 @@ MASTER_STATIC = {
     ]
 }
 
+def clean_ai_generated_text(text):
+    """Deterministic safeguard to prevent hallucinated phrasing and keep executive metrics clean."""
+    if not isinstance(text, str):
+        return text
+    replacements = [
+        (r"\bthirty-six-degree\b", "360°"),
+        (r"\bthirty six degree\b", "360°"),
+        (r"\bthree hundred and sixty degree\b", "360°"),
+        (r"\b360 degree\b", "360°"),
+        (r"\b360-degree\b", "360°"),
+        (r"\btwenty-three years\b", "23+ years"),
+        (r"\bone hundred million dollars\b", "$100M+"),
+        (r"\beight thousand\b", "8,000+"),
+        (r"\bfifteen million\b", "$15M+"),
+    ]
+    for pattern, repl in replacements:
+        text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
+    return text
+
+def sanitize_json_payload(data):
+    """Recursively cleans all strings in the AI output dictionary."""
+    if isinstance(data, dict):
+        return {k: sanitize_json_payload(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_json_payload(item) for item in data]
+    elif isinstance(data, str):
+        return clean_ai_generated_text(data)
+    return data
+
 def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font_size_pt=10, is_highlighted=False):
     part = paragraph.part
     r_id = part.relate_to(url, docx.opc.constants.RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
@@ -654,11 +683,25 @@ def create_master_application_zip(comb_docx, review_docx, clean_docx):
     zip_buffer.seek(0)
     return zip_buffer.getvalue()
 
+def rebuild_all_documents():
+    """Helper to recompile all 3 docx files and zip bundle when state changes."""
+    tailored_data = st.session_state["tailored_data"]
+    cover_data = st.session_state["cover_data"]
+    clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
+    review_docx = create_master_resume_docx(tailored_data, highlight_changes=True)
+    comb_docx = create_combined_application_docx(cover_data, tailored_data)
+    master_zip = create_master_application_zip(comb_docx, review_docx, clean_docx)
+
+    st.session_state["comb_docx"] = comb_docx
+    st.session_state["review_docx"] = review_docx
+    st.session_state["clean_docx"] = clean_docx
+    st.session_state["master_zip"] = master_zip
+
 # ==============================================================================
 # 5. STREAMLIT FRONTEND & ENGINE CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("Real-Time AI Tailoring • Word (.docx) Suite • 3-Asset Master Bundle • ATS Scoring")
+st.caption("Real-Time AI Tailoring • In-Place Revisions • Word (.docx) Suite • 3-Asset Master Bundle • ATS Scoring")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -679,6 +722,7 @@ with col1:
     job_desc = st.text_area("Target Job Description (JD):", height=240, placeholder="Paste target Job Description here...")
 
     st.markdown("##### Special Instructions & Context (Optional)")
+    st.caption("Dump raw, casual notes or key company specifics here. The AI will formalize and integrate them cleanly.")
     
     st.components.v1.html(
         """
@@ -783,30 +827,33 @@ if generate_btn:
 
                 Analyze the provided target Job Description (JD) and special instructions to extract the company name, target role title, and generate fully customized documents.
 
-                STRICT RULES FOR GENERATING JSON:
+                STRICT EXECUTIVE WRITING RULES:
+                - NEVER spell out numbers or metric notations into words. Always write "360°" (NEVER "thirty-six-degree" or "360-degree"), "$100M+" (NEVER "one hundred million"), "23+ years" (NEVER "twenty-three years"), "8,000+" (NEVER "eight thousand"), and "~40%" (NEVER "forty percent").
+                - Synthesize casual or informal special instructions into polished, authoritative executive phrasing.
 
+                JSON SCHEMA REQUIREMENTS:
                 1. IDENTIFY TARGET COMPANY & ROLE:
                    - "target_company": The specific company name from the JD.
                    - "target_role": The specific role title from the JD.
 
                 2. HEADER SUBTITLE DUAL VARIABLES:
                    - Format: "[header_focus_1] | FMCG | GTM & Omnichannel Leader | [header_focus_2]"
-                   - "header_focus_1": Target leadership title matching the JD (e.g. "Commercial & Digital Transformation Director", "E-Commerce & Commercial Director", "Global Distributor Management Director"). Max 36 chars.
-                   - "header_focus_2": Specialized domain focus matching the JD (e.g. "Enterprise Sales Technology Leader", "Global Distributor Governance Leader", "Omnichannel RTM & Digital Execution"). Max 40 chars.
+                   - "header_focus_1": Target leadership title matching the JD. Max 36 chars.
+                   - "header_focus_2": Specialized domain focus matching the JD. Max 40 chars.
 
                 3. EXECUTIVE SUMMARY (STRICTLY 155 TO 170 WORDS / EXACTLY 8 FULL JUSTIFIED LINES):
-                   - Write an authoritative, high-impact, passionate executive summary of EXACTLY 155 to 170 words tailored directly to the target mandate and company.
+                   - Authoritative, high-impact, passionate executive summary of EXACTLY 155 to 170 words tailored to the mandate.
                    - It must completely fill 8 full justified lines in Calibri 10pt (line spacing multiple 1.16).
-                   - Deliver a compelling, high-conviction narrative covering:
+                   - Deliver a compelling narrative covering:
                      * 23+ years driving FMCG commercial strategy, digital commerce, and enterprise sales technology across MEA, India, and Asia.
                      * Rare 360° vantage combining principal-led FMCG commercial leadership, digital distribution entrepreneurship, and enterprise SaaS transformations with $100M+ P&L/portfolio ownership.
                      * Founding & scaling UAE's premier digital B2B2C distribution ecosystem (Conektr), aggregating extensive catalogs across ambient, packaged goods, and personal care brands to 8,000+ retailers.
                      * Leading enterprise technology advisory & SFA/DMS modernizations (FieldAssist & Ivy Mobility) for 10+ Tier-1 CPG leaders (P&G, Nestlé, GSK, Coca-Cola), delivering ~40% logistics cost reduction, >50% drop in coverage cost, and ~20% productivity uplifts.
 
                 4. CAPABILITY ORDERING (PRIORITIZATION):
-                   - Rank the 5 capability keys based on the JD's highest priorities (place the top 2 matching keys first):
+                   - Rank the 5 capability keys based on the JD's highest priorities (top 2 matching keys first):
                      Available keys: ["commercial", "digital", "transformation", "capability", "entrepreneurship"]
-                   - "capability_order": An array containing all 5 keys in ordered priority.
+                   - "capability_order": Array containing all 5 keys.
 
                 5. CONEKTR CATEGORY BULLET:
                    - Category aggregation bullet strictly tailored to the products/domain of the target company.
@@ -819,20 +866,19 @@ if generate_btn:
                 7. ATS MATCH SCORE (INTEGER 88-97):
                    - "ats_match_score": Integer reflecting alignment with the provided JD.
 
-                8. COVER LETTER & MATCH MATRIX (STRICTLY ONE PAGE EACH):
+                8. COVER LETTER & MATCH MATRIX:
                    - "subject_line": "Application for [Target Role] - [Target Company]"
-                   - "cover_para_1": Authoritative opening explicitly referencing the company name, role title, and candidate's 23+ year track record.
-                   - "cover_para_2": Direct alignment with the target company's specific commercial and digital priorities based on JD and special instructions.
-                   - "cover_bullets": 4 high-impact bullets formatted as "Bold Category: Detailed metric description" matching the visual style:
+                   - "cover_para_1": Authoritative opening explicitly referencing company name, role title, and 23+ year track record.
+                   - "cover_para_2": Direct alignment with company's commercial/digital priorities based on JD & special instructions.
+                   - "cover_bullets": 4 high-impact bullets formatted as "Bold Category: Detailed metric description":
                      1) Global Distributor Management & Commercial Governance: ...
                      2) Enterprise Digital Architecture & SFA Systems: ...
                      3) Measurable P&L & Operational ROI: ...
                      4) Cross-Functional Leadership & Partner Strategy: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
-                   - "matrix_items": Array of EXACTLY 6 concise competency rows mapping JD pillars to candidate evidence.
-                     IMPORTANT FOR MATCH MATRIX:
-                     * "requirement_title": Concise single statement of the requirement only (no duplicate descriptions).
-                     * "match_desc": Direct, concise narrative paragraph demonstrating evidence WITHOUT redundant bold prefixes.
+                   - "matrix_items": Array of EXACTLY 6 rich, highly detailed competency rows mapping JD pillars to quantifiable candidate evidence.
+                     * "requirement_title": Concise single statement of the requirement.
+                     * "match_desc": Detailed, high-evidence paragraph with specific achievements, platforms, and metrics (without duplicate bold prefixes).
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -899,6 +945,7 @@ if generate_btn:
                                 raw_text = re.sub(r"\s*```$", "", raw_text)
 
                             parsed_json = json.loads(raw_text)
+                            parsed_json = sanitize_json_payload(parsed_json)
                             
                             ordered_keys = parsed_json.get("capability_order", ["commercial", "digital", "transformation", "capability", "entrepreneurship"])
                             full_capabilities = []
@@ -920,23 +967,16 @@ if generate_btn:
                         break
 
                 if tailored_data:
-                    clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
-                    review_docx = create_master_resume_docx(tailored_data, highlight_changes=True)
-                    comb_docx = create_combined_application_docx(cover_data, tailored_data)
-                    master_zip = create_master_application_zip(comb_docx, review_docx, clean_docx)
-
                     st.session_state["tailored_data"] = tailored_data
                     st.session_state["cover_data"] = cover_data
-                    st.session_state["comb_docx"] = comb_docx
-                    st.session_state["review_docx"] = review_docx
-                    st.session_state["clean_docx"] = clean_docx
-                    st.session_state["master_zip"] = master_zip
+                    st.session_state["job_desc"] = job_desc
+                    rebuild_all_documents()
                     st.session_state["has_results"] = True
                 else:
                     st.error(f"Generation Error: {last_error}. Please check your API key and network permissions.")
 
 # ==============================================================================
-# 6. PERSISTENT DISPLAY & MULTI-FILE DOWNLOAD AREA (3-DOCX SUITE)
+# 6. PERSISTENT DISPLAY & IN-PLACE REVISION ENGINE (3-DOCX SUITE)
 # ==============================================================================
 if st.session_state.get("has_results", False):
     with col2:
@@ -1027,6 +1067,85 @@ if st.session_state.get("has_results", False):
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
+
+        # ==============================================================================
+        # IN-PLACE FEEDBACK & REVISION PROVISION
+        # ==============================================================================
+        st.markdown("---")
+        st.subheader("✍️ Instant Revisions / Feedback on Current Pack")
+        st.caption("Request quick tweaks to this specific pack without re-pasting the JD. The AI will revise and update the downloads above in place.")
+
+        correction_text = st.text_area(
+            "Enter corrections or adjustments (e.g., 'Make match matrix points more detailed', 'Emphasize beverage distribution more in the summary'):",
+            height=85,
+            placeholder="Type your adjustments here..."
+        )
+
+        if st.button("🔄 Apply Revisions to Current Pack", type="secondary"):
+            if not correction_text.strip():
+                st.warning("Please type your feedback or correction first.")
+            else:
+                with st.spinner("⚡ Applying targeted corrections and rebuilding Word suite..."):
+                    revise_prompt = f"""
+                    You are refining an existing tailored executive application pack for Madhusudhanan Janakarajan.
+
+                    CURRENT APPLICATION JSON DATA:
+                    {json.dumps(st.session_state["tailored_data"])}
+
+                    USER REVISION REQUEST / CORRECTION:
+                    {correction_text}
+
+                    STRICT REVISION RULES:
+                    1. Apply the user's specific corrections directly to the relevant fields (e.g. executive_summary, matrix_items, cover_para, or bullet points).
+                    2. Maintain all existing locked metrics and structures that were not asked to be changed.
+                    3. NEVER write numbers as words. Ensure '360°', '$100M+', '23+ years', '8,000+', and '~40%' remain in numeric form.
+                    4. Keep the executive_summary between 155 and 170 words (exactly 8 lines in 10pt Calibri).
+                    5. Ensure matrix_items contain 6 detailed, metric-backed proof points.
+
+                    Return ONLY the updated JSON with all fields intact.
+                    """
+
+                    client = genai.Client(api_key=api_key)
+                    revised_success = False
+                    for model_cand in ["gemini-2.5-flash", "gemini-3.5-flash-lite"]:
+                        try:
+                            rev_resp = client.models.generate_content(
+                                model=model_cand,
+                                contents=revise_prompt,
+                                config=types.GenerateContentConfig(
+                                    response_mime_type="application/json",
+                                    temperature=0.2
+                                )
+                            )
+                            rev_raw = rev_resp.text.strip()
+                            if rev_raw.startswith("```"):
+                                rev_raw = re.sub(r"^```(?:json)?\s*", "", rev_raw)
+                                rev_raw = re.sub(r"\s*```$", "", rev_raw)
+                            
+                            rev_json = json.loads(rev_raw)
+                            rev_json = sanitize_json_payload(rev_json)
+                            
+                            # Preserve full capabilities
+                            ordered_keys = rev_json.get("capability_order", ["commercial", "digital", "transformation", "capability", "entrepreneurship"])
+                            full_caps = [MASTER_CAPABILITIES[k] for k in ordered_keys if k in MASTER_CAPABILITIES]
+                            for k, cap_t in MASTER_CAPABILITIES.items():
+                                if cap_t not in full_caps:
+                                    full_caps.append(cap_t)
+                            rev_json["capabilities"] = full_caps
+                            
+                            st.session_state["tailored_data"] = rev_json
+                            st.session_state["cover_data"] = rev_json.get("cover_letter_data", {})
+                            rebuild_all_documents()
+                            revised_success = True
+                            break
+                        except Exception as e:
+                            continue
+
+                    if revised_success:
+                        st.success("✅ Revisions successfully applied! Download the updated files above.")
+                        st.rerun()
+                    else:
+                        st.error("Failed to apply revision. Please check API status or try rephrasing your note.")
 
         with st.expander("🔍 View AI Tailored Dynamic Variables"):
             st.write("**Identified Company:**", target_co)
