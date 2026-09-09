@@ -24,15 +24,15 @@ st.set_page_config(
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 CANDIDATE_MODELS = [
-    "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-flash"
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-pro-latest"
 ]
 
-def generate_with_fallback(client, contents, config, max_retries_per_model=3):
+def generate_with_fallback(client, contents, config, max_retries_per_model=2):
     """
-    Executes content generation with exponential backoff and fallback model switching
-    to withstand transient 503 UNAVAILABLE or 429 rate limit spikes.
+    Executes content generation with exponential backoff and validated fallback model switching.
     """
     last_captured_error = None
     for model_name in CANDIDATE_MODELS:
@@ -47,13 +47,13 @@ def generate_with_fallback(client, contents, config, max_retries_per_model=3):
             except Exception as e:
                 err_text = str(e)
                 last_captured_error = e
-                # Retry on 503 (server high load/unavailable) or 429 (rate-limit)
+                # Retry on 503, 429, or temporary network interruptions
                 if any(k in err_text for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED"]):
                     if attempt < max_retries_per_model - 1:
-                        sleep_seconds = (2 ** attempt) * 2  # 2s, 4s, 8s
+                        sleep_seconds = (attempt + 1) * 2
                         time.sleep(sleep_seconds)
                         continue
-                # If non-retryable or retries exhausted for this model, fall through to next model
+                # If 404 (model not found on key/tier) or exhausted retries, break to next candidate model
                 break
     raise last_captured_error
 
@@ -841,7 +841,7 @@ def populate_match_matrix_docx_page(doc, cover_data):
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
         r'<w:top w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
         r'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
-        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
+        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
         r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
         r'</w:tblBorders>'
     )
@@ -898,7 +898,7 @@ st.caption("Contextual Track Routing • Intelligent Gap Questioning • In-Plac
 with st.sidebar:
     st.header("⚡ System Status")
     if api_key:
-        st.success("🟢 Gemini AI Engine: Active (Multi-Model Resilient Pool)")
+        st.success("🟢 Gemini AI Engine: Active (Validated Model Pool)")
     else:
         st.error("🔴 AI Engine Key Missing (Set GEMINI_API_KEY in Secrets)")
     
@@ -1257,7 +1257,7 @@ if generate_btn:
                     rebuild_all_documents()
                     st.session_state["has_results"] = True
                 else:
-                    st.error(f"Generation Error: {last_error}. Retried across available fallback models but the upstream service is temporarily busy. Please try again in a few moments.")
+                    st.error(f"Generation Error: {last_error}. All candidate models were evaluated. Please check API quota or try again in a few moments.")
 
 # ==============================================================================
 # 6. PERSISTENT DISPLAY & SECTION 2: IN-PLACE REVISION ENGINE (3-DOCX SUITE)
@@ -1316,7 +1316,6 @@ if st.session_state.get("has_results", False):
             unsafe_allow_html=True,
         )
 
-        # 1-Click Master ZIP (3 Files)
         st.download_button(
             label="📦 Download Application Bundle (.ZIP) — 3 Word Files",
             data=st.session_state["master_zip"],
