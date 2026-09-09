@@ -19,23 +19,46 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 1. API CONFIGURATION & RESILIENT MODEL CALLER
+# 1. API CONFIGURATION & DYNAMIC MODEL DISCOVERY WITH RESILIENT RETRIES
 # ==============================================================================
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
-CANDIDATE_MODELS = [
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-pro-latest"
-]
+def get_verified_model_list(client):
+    """
+    Dynamically queries your API key's available models to ensure
+    only active, valid endpoints that support generateContent are called.
+    """
+    canonical_fallbacks = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+    try:
+        discovered = []
+        for m in client.models.list():
+            raw_name = getattr(m, 'name', '') or ''
+            clean_name = raw_name.replace('models/', '').strip()
+            actions = getattr(m, 'supported_actions', []) or getattr(m, 'supported_generation_methods', []) or []
+            if actions and 'generateContent' not in actions:
+                continue
+            # Filter to core text/reasoning models only
+            if 'gemini' in clean_name.lower() and not any(x in clean_name for x in ['image', 'live', 'tts', 'embedding', 'computer-use', 'audio']):
+                discovered.append(clean_name)
+        
+        if discovered:
+            preferred = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-pro", "gemini-1.5-pro"]
+            sorted_models = [m for m in preferred if m in discovered]
+            sorted_models += [m for m in discovered if m not in sorted_models]
+            return sorted_models
+    except Exception:
+        pass
+    return canonical_fallbacks
 
-def generate_with_fallback(client, contents, config, max_retries_per_model=2):
+def generate_with_fallback(client, contents, config, max_retries_per_model=3):
     """
-    Executes content generation with exponential backoff and validated fallback model switching.
+    Executes content generation with exponential backoff on transient 503/429 spikes
+    and skips dead 404 endpoints across dynamically verified models.
     """
+    models_to_try = get_verified_model_list(client)
     last_captured_error = None
-    for model_name in CANDIDATE_MODELS:
+
+    for model_name in models_to_try:
         for attempt in range(max_retries_per_model):
             try:
                 response = client.models.generate_content(
@@ -47,14 +70,17 @@ def generate_with_fallback(client, contents, config, max_retries_per_model=2):
             except Exception as e:
                 err_text = str(e)
                 last_captured_error = e
-                # Retry on 503, 429, or temporary network interruptions
+                # 404: Endpoint alias does not exist on this key/version -> skip immediately to next model
+                if "404" in err_text or "NOT_FOUND" in err_text:
+                    break
+                # 503 / 429: Temporary spike or rate limit -> wait and retry with backoff
                 if any(k in err_text for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED"]):
                     if attempt < max_retries_per_model - 1:
-                        sleep_seconds = (attempt + 1) * 2
-                        time.sleep(sleep_seconds)
+                        time.sleep((attempt + 1) * 2)  # 2s, 4s, 6s
                         continue
-                # If 404 (model not found on key/tier) or exhausted retries, break to next candidate model
+                # For unhandled client issues, try the next model
                 break
+
     raise last_captured_error
 
 # ==============================================================================
@@ -841,7 +867,7 @@ def populate_match_matrix_docx_page(doc, cover_data):
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
         r'<w:top w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
         r'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
-        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
         r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
         r'</w:tblBorders>'
     )
@@ -893,12 +919,12 @@ def rebuild_all_documents():
 # 5. STREAMLIT FRONTEND & ENGINE CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("Contextual Track Routing • Intelligent Gap Questioning • In-Place Revisions • Word (.docx) Suite")
+st.caption("Contextual Track Routing • Dynamic Model Pool • In-Place Revisions • Word (.docx) Suite")
 
 with st.sidebar:
     st.header("⚡ System Status")
     if api_key:
-        st.success("🟢 Gemini AI Engine: Active (Validated Model Pool)")
+        st.success("🟢 Gemini AI Engine: Active (Dynamic Discovery)")
     else:
         st.error("🔴 AI Engine Key Missing (Set GEMINI_API_KEY in Secrets)")
     
@@ -1257,7 +1283,7 @@ if generate_btn:
                     rebuild_all_documents()
                     st.session_state["has_results"] = True
                 else:
-                    st.error(f"Generation Error: {last_error}. All candidate models were evaluated. Please check API quota or try again in a few moments.")
+                    st.error(f"Generation Error: {last_error}")
 
 # ==============================================================================
 # 6. PERSISTENT DISPLAY & SECTION 2: IN-PLACE REVISION ENGINE (3-DOCX SUITE)
