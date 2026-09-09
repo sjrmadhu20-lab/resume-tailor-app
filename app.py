@@ -19,9 +19,43 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 1. API CONFIGURATION
+# 1. API CONFIGURATION & RESILIENT MODEL CALLER
 # ==============================================================================
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
+
+CANDIDATE_MODELS = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash"
+]
+
+def generate_with_fallback(client, contents, config, max_retries_per_model=3):
+    """
+    Executes content generation with exponential backoff and fallback model switching
+    to withstand transient 503 UNAVAILABLE or 429 rate limit spikes.
+    """
+    last_captured_error = None
+    for model_name in CANDIDATE_MODELS:
+        for attempt in range(max_retries_per_model):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=config
+                )
+                return response
+            except Exception as e:
+                err_text = str(e)
+                last_captured_error = e
+                # Retry on 503 (server high load/unavailable) or 429 (rate-limit)
+                if any(k in err_text for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED"]):
+                    if attempt < max_retries_per_model - 1:
+                        sleep_seconds = (2 ** attempt) * 2  # 2s, 4s, 8s
+                        time.sleep(sleep_seconds)
+                        continue
+                # If non-retryable or retries exhausted for this model, fall through to next model
+                break
+    raise last_captured_error
 
 # ==============================================================================
 # 2. MASTER KNOWLEDGE ARCHIVE (LOCKED BASELINE + DYNAMIC STORE)
@@ -510,7 +544,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             cell.width = col_widths[i]
             cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
-    # Contextual dynamic headings for the 3 columns
     h0 = tailored_data.get("exp_col_header_1", "Traditional FMCG Operator")
     h1 = tailored_data.get("exp_col_header_2", "Digital FMCG Distribution")
     h2 = tailored_data.get("exp_col_header_3", "Distribution Transformation")
@@ -865,7 +898,7 @@ st.caption("Contextual Track Routing • Intelligent Gap Questioning • In-Plac
 with st.sidebar:
     st.header("⚡ System Status")
     if api_key:
-        st.success("🟢 Gemini AI Engine: Active (gemini-3.6-flash)")
+        st.success("🟢 Gemini AI Engine: Active (Multi-Model Resilient Pool)")
     else:
         st.error("🔴 AI Engine Key Missing (Set GEMINI_API_KEY in Secrets)")
     
@@ -1012,8 +1045,8 @@ with col1:
                 """
                 client = genai.Client(api_key=api_key)
                 try:
-                    gap_resp = client.models.generate_content(
-                        model="gemini-3.6-flash",
+                    gap_resp = generate_with_fallback(
+                        client=client,
                         contents=gap_prompt,
                         config=types.GenerateContentConfig(temperature=0.2)
                     )
@@ -1035,7 +1068,6 @@ with col1:
                 st.warning("Please enter your answers before saving.")
             else:
                 with st.spinner("Validating and adding new facts into archive..."):
-                    # Conflict Resolution & Structuring pass
                     ingest_prompt = f"""
                     You are a knowledge base curator for Madhusudhanan Janakarajan.
                     Review the new facts provided by the candidate against their established background.
@@ -1051,8 +1083,8 @@ with col1:
                     """
                     client = genai.Client(api_key=api_key)
                     try:
-                        ing_resp = client.models.generate_content(
-                            model="gemini-3.6-flash",
+                        ing_resp = generate_with_fallback(
+                            client=client,
                             contents=ingest_prompt,
                             config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.1)
                         )
@@ -1188,8 +1220,8 @@ if generate_btn:
                 last_error = ""
 
                 try:
-                    response = client.models.generate_content(
-                        model="gemini-3.6-flash",
+                    response = generate_with_fallback(
+                        client=client,
                         contents=prompt,
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json", temperature=0.2
@@ -1225,7 +1257,7 @@ if generate_btn:
                     rebuild_all_documents()
                     st.session_state["has_results"] = True
                 else:
-                    st.error(f"Generation Error: {last_error}. Please check your API key and network permissions.")
+                    st.error(f"Generation Error: {last_error}. Retried across available fallback models but the upstream service is temporarily busy. Please try again in a few moments.")
 
 # ==============================================================================
 # 6. PERSISTENT DISPLAY & SECTION 2: IN-PLACE REVISION ENGINE (3-DOCX SUITE)
@@ -1362,8 +1394,8 @@ if st.session_state.get("has_results", False):
 
                     client = genai.Client(api_key=api_key)
                     try:
-                        rev_resp = client.models.generate_content(
-                            model="gemini-3.6-flash",
+                        rev_resp = generate_with_fallback(
+                            client=client,
                             contents=revise_prompt,
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json", temperature=0.2
@@ -1377,7 +1409,6 @@ if st.session_state.get("has_results", False):
                         rev_json = json.loads(rev_raw)
                         rev_json = sanitize_json_payload(rev_json)
 
-                        # Preserve full capabilities
                         ordered_keys = rev_json.get(
                             "capability_order",
                             ["commercial", "digital", "transformation", "capability", "entrepreneurship"],
