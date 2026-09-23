@@ -336,6 +336,11 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     hyperlink.append(new_run)
     paragraph._p.append(hyperlink)
 
+def apply_xml_spacing(p, before_pt=0, after_pt=8, line_twips=278):
+    pPr = p._p.get_or_add_pPr()
+    spPr = parse_xml(f'<w:spacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:before="{int(before_pt*20)}" w:after="{int(after_pt*20)}" w:line="{line_twips}" w:lineRule="auto"/>')
+    pPr.append(spPr)
+
 # ==============================================================================
 # 3. WORD RESUME ENGINE (DYNAMIC PAGE 2 TRACK ROUTING)
 # ==============================================================================
@@ -344,11 +349,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style.font.name = 'Calibri'
     style.font.size = Pt(10)
     style.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
-
-    def apply_xml_spacing(p, before_pt=0, after_pt=8, line_twips=278):
-        pPr = p._p.get_or_add_pPr()
-        spPr = parse_xml(f'<w:spacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:before="{int(before_pt*20)}" w:after="{int(after_pt*20)}" w:line="{line_twips}" w:lineRule="auto"/>')
-        pPr.append(spPr)
 
     def add_heading(title, space_before=0, space_after=8, line_border_above=False, is_multiple=False, is_underline=False):
         p = doc.add_paragraph()
@@ -564,7 +564,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             cell.width = col_widths[i]
             cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
-    # Determine Page 2 Layout Mode: "capability" or default "commercial"
     page2_mode = tailored_data.get("page2_mode", "commercial")
     
     if page2_mode == "capability":
@@ -616,7 +615,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
     if page2_mode == "capability":
-        # COLUMN 1: SALES OPERATIONS (Britannia GCC RSM, Conektr Operations CEO, ADT Enterprise)
         c0_items = [
             {"text": "Britannia Industries Ltd | 2008 – 2011", "bold": True, "size": 10, "space_before": 2},
             {"text": "Regional Sales Manager (RSM) – GCC", "bold": True, "size": 10, "space_after": 3},
@@ -633,7 +631,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             {"text": "Directed institutional route planning, territory coverage, contract governance, and corporate sales execution.", "is_bullet": True, "size": 10}
         ]
 
-        # COLUMN 2: SALES CAPABILITY - TRADITIONAL (Britannia South India Capability, Airtel Karnataka, Reliance)
         c1_items = [
             {"text": "Britannia Industries Ltd | 2007 – 2008", "bold": True, "size": 10, "space_before": 2},
             {"text": "Regional Sales Capability Head – India", "bold": True, "size": 10, "space_after": 3},
@@ -650,7 +647,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             {"text": "Certified CST & DOOR Training All-India Topper; institutionalized 70:20:10 coaching standard.", "is_bullet": True, "size": 10}
         ]
 
-        # COLUMN 3: SALES CAPABILITY - DIGITAL (Ivy Mobility, Conektr Platform, TransCPG / Power BI)
         c2_items = [
             {"text": "TransCPG & FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_before": 2},
             {"text": "Board Advisor – Commercial Tech", "bold": True, "size": 10, "space_after": 3},
@@ -668,7 +664,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         ]
 
     else:
-        # DEFAULT / COMMERCIAL & TRANSFORMATION MODE
         c0_items = [
             {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 2},
             {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
@@ -715,7 +710,6 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 10}
         ]
 
-    # Injected contextual bullets (if present)
     c0_extra = tailored_data.get("column_1_extra_bullet", "")
     if c0_extra and c0_extra.strip():
         c0_items.insert(6, {"text": c0_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
@@ -791,73 +785,73 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. WORD COVER, MATRIX & COMBINED PACK BUILDER (.DOCX)
+# 4. WORD COVER, MATCH MATRIX (STRICT 1-PAGE A4) & COMBINED PACK BUILDER
 # ==============================================================================
 def populate_cover_letter_docx_page(doc, cover_data):
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_title.paragraph_format.space_after = Pt(10)
+    apply_xml_spacing(p_title, before_pt=0, after_pt=10, line_twips=278)
     r_t = p_title.add_run("COVER LETTER")
     r_t.bold = True
     r_t.font.name = 'Calibri'
     r_t.font.size = Pt(14)
 
     p_sub = doc.add_paragraph()
-    p_sub.paragraph_format.space_before = Pt(6)
-    p_sub.paragraph_format.space_after = Pt(8)
+    apply_xml_spacing(p_sub, before_pt=4, after_pt=8, line_twips=260)
     r_sb = p_sub.add_run(f"Subject: {cover_data.get('subject_line', '')}")
     r_sb.bold = True
     r_sb.font.name = 'Calibri'
     r_sb.font.size = Pt(11)
 
     p_d = doc.add_paragraph("Dear Hiring Team,")
-    p_d.paragraph_format.space_before = Pt(6)
-    p_d.paragraph_format.space_after = Pt(8)
+    apply_xml_spacing(p_d, before_pt=4, after_pt=8, line_twips=260)
 
     p_p1 = doc.add_paragraph(cover_data.get("cover_para_1", ""))
-    p_p1.paragraph_format.space_after = Pt(8)
+    apply_xml_spacing(p_p1, before_pt=0, after_pt=8, line_twips=270)
     p_p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     p_p2 = doc.add_paragraph(cover_data.get("cover_para_2", ""))
-    p_p2.paragraph_format.space_after = Pt(8)
+    apply_xml_spacing(p_p2, before_pt=0, after_pt=8, line_twips=270)
     p_p2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     p_kh = doc.add_paragraph()
-    p_kh.paragraph_format.space_after = Pt(6)
+    apply_xml_spacing(p_kh, before_pt=0, after_pt=6, line_twips=260)
     r_kh = p_kh.add_run("Key highlights of what I bring to this mandate include:")
     r_kh.bold = True
     r_kh.font.name = 'Calibri'
     r_kh.font.size = Pt(11)
 
     for b in cover_data.get("cover_bullets", []):
-        bp = doc.add_paragraph(style='List Bullet')
-        bp.paragraph_format.left_indent = Inches(0.5)
-        bp.paragraph_format.right_indent = Inches(0.2)
-        bp.paragraph_format.space_after = Pt(6)
-        bp.paragraph_format.line_spacing = 1.15
+        bp = doc.add_paragraph()
+        bp.paragraph_format.left_indent = Inches(0.25)
+        bp.paragraph_format.first_line_indent = Inches(-0.18)
+        apply_xml_spacing(bp, before_pt=0, after_pt=5, line_twips=250)
         bp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        
+        r_bull = bp.add_run("•\t")
+        r_bull.font.name = 'Calibri'
+        r_bull.font.size = Pt(10)
         
         parts = b.split(":", 1)
         if len(parts) == 2:
             r_head = bp.add_run(parts[0] + ": ")
             r_head.bold = True
             r_head.font.name = 'Calibri'
-            r_head.font.size = Pt(10.5)
+            r_head.font.size = Pt(10)
             r_tail = bp.add_run(parts[1].strip())
             r_tail.font.name = 'Calibri'
-            r_tail.font.size = Pt(10.5)
+            r_tail.font.size = Pt(10)
         else:
             r_b = bp.add_run(b)
             r_b.font.name = 'Calibri'
-            r_b.font.size = Pt(10.5)
+            r_b.font.size = Pt(10)
 
     p_cl = doc.add_paragraph(cover_data.get("cover_para_closing", ""))
-    p_cl.paragraph_format.space_before = Pt(6)
-    p_cl.paragraph_format.space_after = Pt(8)
+    apply_xml_spacing(p_cl, before_pt=4, after_pt=8, line_twips=270)
     p_cl.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     p_sign = doc.add_paragraph()
-    p_sign.paragraph_format.space_before = Pt(8)
+    apply_xml_spacing(p_sign, before_pt=6, after_pt=0, line_twips=240)
     r_s0 = p_sign.add_run("Sincerely,\n")
     r_s0.font.name = 'Calibri'
     r_s1 = p_sign.add_run("Madhusudhanan Janakarajan (Madhu)\n")
@@ -867,66 +861,95 @@ def populate_cover_letter_docx_page(doc, cover_data):
     r_s2.font.name = 'Calibri'
 
 def populate_match_matrix_docx_page(doc, cover_data):
+    """
+    Renders an exhaustive yet strictly 1-PAGE A4 Match Matrix.
+    Uses ultra-efficient spacing, compact cell padding, and high-density font rendering.
+    """
     p_mtitle = doc.add_paragraph()
     p_mtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_mtitle.paragraph_format.space_after = Pt(8)
-    r_mt = p_mtitle.add_run("MATCH MATRIX")
+    apply_xml_spacing(p_mtitle, before_pt=0, after_pt=2, line_twips=220)
+    r_mt = p_mtitle.add_run("EXECUTIVE REQUIREMENT & COMPETENCY MATCH MATRIX")
     r_mt.bold = True
     r_mt.font.name = 'Calibri'
-    r_mt.font.size = Pt(14)
+    r_mt.font.size = Pt(11.5)
+
+    p_sub = doc.add_paragraph()
+    p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    apply_xml_spacing(p_sub, before_pt=0, after_pt=5, line_twips=190)
+    r_sub = p_sub.add_run("Comprehensive cross-enterprise alignment of 23+ years FMCG, Route-to-Market, and Sales Capability leadership against mandate priorities.")
+    r_sub.italic = True
+    r_sub.font.name = 'Calibri'
+    r_sub.font.size = Pt(8.5)
 
     matrix_items = cover_data.get("matrix_items", [])
     table = doc.add_table(rows=len(matrix_items) + 1, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
-    table.rows[0].cells[0].width = Inches(2.5)
-    table.rows[0].cells[1].width = Inches(5.0)
+    
+    col_w0 = Inches(2.25)
+    col_w1 = Inches(5.25)
 
+    # Style Header Row
     cell_0 = table.rows[0].cells[0]
     cell_1 = table.rows[0].cells[1]
-    
+    cell_0.width = col_w0
+    cell_1.width = col_w1
+    cell_0.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    cell_1.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+    shd_xml = r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="DCE6F1"/>'
+    cell_0._tc.get_or_add_tcPr().append(parse_xml(shd_xml))
+    cell_1._tc.get_or_add_tcPr().append(parse_xml(shd_xml))
+
     p_h0 = cell_0.paragraphs[0]
-    p_h0.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_h0 = p_h0.add_run("Target Job Requirement / Focus Domain")
+    p_h0.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    apply_xml_spacing(p_h0, before_pt=2, after_pt=2, line_twips=200)
+    r_h0 = p_h0.add_run("Target Mandate Requirement")
     r_h0.bold = True
     r_h0.font.name = 'Calibri'
-    r_h0.font.size = Pt(10.5)
+    r_h0.font.size = Pt(9.0)
 
     p_h1 = cell_1.paragraphs[0]
-    p_h1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_h1 = p_h1.add_run("How I Match (Evidence & Track Record)")
+    p_h1.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    apply_xml_spacing(p_h1, before_pt=2, after_pt=2, line_twips=200)
+    r_h1 = p_h1.add_run("Candidate Evidence & Multi-Company Track Record")
     r_h1.bold = True
     r_h1.font.name = 'Calibri'
-    r_h1.font.size = Pt(10.5)
+    r_h1.font.size = Pt(9.0)
 
+    # Populate Match Rows
     for idx, item in enumerate(matrix_items):
-        row_cells = table.rows[idx + 1].cells
-        row_cells[0].width = Inches(2.5)
-        row_cells[1].width = Inches(5.0)
-        
-        p0 = row_cells[0].paragraphs[0]
+        row = table.rows[idx + 1]
+        trPr = row._tr.get_or_add_trPr()
+        trPr.append(parse_xml(r'<w:cantSplit xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>'))
+
+        r_cells = row.cells
+        r_cells[0].width = col_w0
+        r_cells[1].width = col_w1
+        r_cells[0].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        r_cells[1].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
+        p0 = r_cells[0].paragraphs[0]
         p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        p0.paragraph_format.space_before = Pt(3)
-        p0.paragraph_format.space_after = Pt(3)
+        apply_xml_spacing(p0, before_pt=2, after_pt=2, line_twips=195)
         r_rt = p0.add_run(item.get('requirement_title', ''))
         r_rt.bold = True
         r_rt.font.name = 'Calibri'
-        r_rt.font.size = Pt(9.5)
-        
-        p1 = row_cells[1].paragraphs[0]
+        r_rt.font.size = Pt(8.5)
+
+        p1 = r_cells[1].paragraphs[0]
         p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p1.paragraph_format.space_before = Pt(3)
-        p1.paragraph_format.space_after = Pt(3)
+        apply_xml_spacing(p1, before_pt=2, after_pt=2, line_twips=195)
         r_mt = p1.add_run(item.get('match_desc', ''))
         r_mt.font.name = 'Calibri'
-        r_mt.font.size = Pt(9.5)
+        r_mt.font.size = Pt(8.5)
 
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        r'<w:top w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
-        r'<w:bottom w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:top w:val="single" w:sz="6" w:space="0" w:color="004B87"/>'
+        r'<w:bottom w:val="single" w:sz="6" w:space="0" w:color="004B87"/>'
         r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
-        r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
+        r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
         r'</w:tblBorders>'
     )
     table._tbl.tblPr.append(tblBorders)
@@ -936,8 +959,8 @@ def create_combined_application_docx(cover_data, tailored_data):
     for section in doc.sections:
         section.top_margin = Inches(0.40)
         section.bottom_margin = Inches(0.40)
-        section.left_margin = Inches(0.5)
-        section.right_margin = Inches(0.5)
+        section.left_margin = Inches(0.50)
+        section.right_margin = Inches(0.50)
     
     populate_cover_letter_docx_page(doc, cover_data)
     doc.add_page_break()
@@ -976,7 +999,7 @@ def rebuild_all_documents():
 # 5. STREAMLIT FRONTEND & CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("Sales Operations & Capability Track • Dynamic 3-Column Experience • Word (.docx) Suite")
+st.caption("Sales Operations & Capability Track • Dynamic 3-Column Experience • 1-Page A4 Match Matrix")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -1175,7 +1198,7 @@ with col1:
                         st.error(f"Archive Update Error: {str(e)}")
 
 # ==============================================================================
-# MAIN GENERATION CONTROLLER (DYNAMIC 3-COLUMN ROUTING)
+# MAIN GENERATION CONTROLLER (DYNAMIC 3-COLUMN + STRICT 1-PAGE MATRIX)
 # ==============================================================================
 if generate_btn:
     if not job_desc or not job_desc.strip():
@@ -1247,7 +1270,7 @@ if generate_btn:
                 8. ATS MATCH SCORE (INTEGER 88-97):
                    - "ats_match_score": Integer reflecting alignment with provided JD.
 
-                9. COVER LETTER & MATCH MATRIX:
+                9. COVER LETTER & MATCH MATRIX REQUIREMENTS (STRICT 1-PAGE A4 GUARANTEE):
                    - "subject_line": "Application for [Target Role] - [Target Company]"
                    - "cover_para_1": Authoritative opening referencing company name, role title, and 23+ year track record.
                    - "cover_para_2": Direct alignment with target company's commercial execution, Right Store, RTM, and capability priorities.
@@ -1257,9 +1280,9 @@ if generate_btn:
                      3) Digitalization, Data Stewardship & Power BI: ...
                      4) Cross-Functional Commercial Leadership: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
-                   - "matrix_items": Array of EXACTLY 6 rich, highly detailed competency rows mapping JD pillars to quantifiable candidate evidence.
-                     * "requirement_title": Concise single statement of the requirement.
-                     * "match_desc": Detailed paragraph with specific achievements, platforms, and metrics.
+                   - "matrix_items": Array of EXACTLY 7 HIGHLY TARGETED COMPETENCY ROWS covering the major pillars in the JD (e.g., 1. Route-to-Market & Distributor Modeling, 2. Right Store Execution & Outlet Optimization, 3. Sales Capability Building & Coaching, 4. Sales Development & Secondary Sell-Out, 5. Digitalization & Regional Power BI Dashboards, 6. Commercial Analytics & Cost-to-Serve, 7. Cross-Functional Stakeholder Governance).
+                     * "requirement_title": Concise, punchy title taken directly from the JD (under 7 words).
+                     * "match_desc": EXACTLY 35 TO 45 WORDS of dense, highly authoritative evidence CORRELATING AT LEAST TWO OF CANDIDATE'S ROLES (e.g., Britannia GCC + Conektr, or Britannia India + Ivy Mobility, or Airtel + Reliance). Must pack verified metrics ($100M+ NSV, 250+ distributors, 8,000+ stores, ~30% ND, 70:20:10, CST, Power BI) without filler to guarantee strict 1-page A4 visual balance.
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -1470,7 +1493,7 @@ if st.session_state.get("has_results", False):
                     2. Maintain all existing locked metrics and structures that were not asked to be changed.
                     3. NEVER write numbers as words. Ensure '360°', '$100M+', '23+ years', '8,000+', and '~40%' remain numeric.
                     4. Keep executive_summary between 155 and 170 words (exactly 8 lines in 10pt Calibri).
-                    5. Ensure matrix_items contain 6 detailed, metric-backed proof points.
+                    5. Ensure matrix_items contains EXACTLY 7 rows, each 35-45 words correlating at least two roles, guaranteeing strict 1-page A4 balance.
 
                     Return ONLY the updated JSON with all fields intact.
                     """
