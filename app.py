@@ -37,7 +37,6 @@ def get_verified_model_list(client):
             actions = getattr(m, 'supported_actions', []) or getattr(m, 'supported_generation_methods', []) or []
             if actions and 'generateContent' not in actions:
                 continue
-            # Filter to core text/reasoning models only
             if 'gemini' in clean_name.lower() and not any(x in clean_name for x in ['image', 'live', 'tts', 'embedding', 'computer-use', 'audio']):
                 discovered.append(clean_name)
         
@@ -70,15 +69,12 @@ def generate_with_fallback(client, contents, config, max_retries_per_model=3):
             except Exception as e:
                 err_text = str(e)
                 last_captured_error = e
-                # 404: Endpoint alias does not exist on this key/version -> skip immediately to next model
                 if "404" in err_text or "NOT_FOUND" in err_text:
                     break
-                # 503 / 429: Temporary spike or rate limit -> wait and retry with backoff
                 if any(k in err_text for k in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED"]):
                     if attempt < max_retries_per_model - 1:
-                        time.sleep((attempt + 1) * 2)  # 2s, 4s, 6s
+                        time.sleep((attempt + 1) * 2)
                         continue
-                # For unhandled client issues, try the next model
                 break
 
     raise last_captured_error
@@ -117,14 +113,12 @@ BASE_CAPABILITIES = {
         " distribution growth."
     ),
     "capability": (
-        "Sales Capability & Training Leadership: Established and led regional"
-        " sales training operations managing a team of certified trainers to"
-        " design and deliver end-to-end sales induction and leadership"
-        " curricula up to the Regional Sales Manager (RSM) level. Top-performer"
-        " in consultative selling frameworks (including SPIN Selling), driving"
-        " frontline execution rigor, distributor capability building, and"
-        " institutionalized sales performance standards. Managed Train the"
-        " Trainer, Soft skills and automation training."
+        "Sales Capability, Enablement & Operations Excellence: Certified Sales"
+        " Trainer (CST, DOOR India Topper, SPIN Certified) with 6+ years heading"
+        " regional sales training and capability operations. Designed & deployed"
+        " Right Store execution, BMI distributor infrastructure audits,"
+        " Train-the-Trainer (TTT), 70:20:10 learning models, and territory/journey"
+        " planning frameworks for 1,000+ reps and managers across GCC & India."
     ),
     "entrepreneurship": (
         "Entrepreneurial Venture Scaling & Governance: Raised $15M in funding"
@@ -180,6 +174,13 @@ MASTER_STATIC = {
                 " India"
             ),
         },
+        {
+            "degree": "Executive Sales Certifications",
+            "details": (
+                "Certified Sales Trainer (CST) | SPIN Technique Certified |"
+                " DOOR Training All-India Topper | CREST Customer Relationship"
+            ),
+        },
     ],
     "languages": (
         "English | Hindi | Tamil | Kannada | Telugu |   effective engagement"
@@ -201,9 +202,9 @@ MASTER_STATIC = {
             " SDLC ownership (Figma → Development → Launch)"
         ),
         "Data, Analytics & Optimization": (
-            "Power BI | Alteryx | Tableau | Power Apps | Python scripting |"
-            " Sales & trade analytics | Demand forecasting | Route & beat"
-            " optimization"
+            "Power BI (Regional Data Hubs & Sales Development Dashboards) | Alteryx |"
+            " Tableau | Power Apps | Python scripting | Sales & trade analytics | Demand forecasting |"
+            " Route & beat optimization"
         ),
         "Fintech & Payments": (
             "Stripe | PayPal | CCAvenue | Triterras | Tabby | Spotii (credit,"
@@ -237,35 +238,32 @@ CANDIDATE DEEP REPOSITORY & VERIFIED ACHIEVEMENTS:
 - Category & Brand Portfolios:
   * Beverages & Energy (>50% Conektr GMV): Red Bull (18-month exclusivity contract with monthly trade fees), Coca-Cola (margin-backed exclusive contracts), Power Horse, PepsiCo, still/sparkling waters, sodas, and functional health drinks (Ornamin C, Vitane C).
   * Packaged Foods, Bakery & Snacking: Britannia biscuits/dairy P&L (200+ SKUs across GCC & India), Mondelez, Kellogg's, Kraft Heinz, and Nestlé.
-  * Personal Care & Beauty: Extensive multi-category aggregation across Unilever (Dove, Sunsilk, Tresemme, Pond's, Vaseline), P&G (Pantene, Head & Shoulders, Olay), L'Oréal, and Colgate-Palmolive. (Note: Candidate specializes in mass/masstige high-volume retail CPG, NOT luxury boutique fashion).
+  * Personal Care & Beauty: Extensive multi-category aggregation across Unilever (Dove, Sunsilk, Tresemme, Pond's, Vaseline), P&G (Pantene, Head & Shoulders, Olay), L'Oréal, and Colgate-Palmolive.
   * Regulated Categories: Commercial distribution of international tobacco brands across UAE general trade (Marlboro, Dunhill, Chesterfield, Parliament, L&M, Rothmans).
   * Spirits: Commercial execution standards and digital pilots aligned with Bacardi's "Picture of Success".
   * Consumer Healthcare: SFA/DMS rollouts for GSK Consumer Healthcare / Haleon across MEA.
   * Telecom & Tech Sales: Airtel & Reliance GSM/CDMA SIMs, Broadband, web café internet trade models, and Samsung 'Slim' introduction in Karnataka. ADT Tyco enterprise electronic/smoke security tenders.
-- Distributor Governance & Economics:
-  * Governed 6 GCC master distributors and 200+ distributors in India for Britannia.
-  * Techno-distribution philosophy: Introducing monthly unique technological interventions per distributor to demonstrate tangible ROI and drive distributor growth rather than only asking for numbers.
-  * Command over NSV, Gross Margin (GM), trade spend ROI, pricing architecture, drop-size thresholds, and Order-to-Cash cycles. 30% margin improvements and 50% drop in supply chain complexities.
-- Entrepreneurship & Operations:
-  * Scaled Conektr to 8,000+ B2B stores, AED 50M GMV at 18% gross margin. Raised $15M from DIFC VC and C-suite FMCG leaders (ex-President Mondelez, ex-CFO BAT) with 25% to 400% returns on M&A exit to Al Maya Group.
-  * Overcame two-sided marketplace chicken-and-egg hurdle by partnering with master supermarket for full 10K SKU master catalog, building immediate retail density before transitioning directly to brand principals.
-  * Resolved field sales resistance to digital self-ordering by aligning incentive plans, freeing reps to focus on high-commission consultative category development.
-  * Lean build: Deployed Magento, Flutter, Dynamics 365, VPN telephony on <10% standard capital. Built offshore delivery hubs cutting operational costs by 66%.
-  * Last-mile logistics: 2-wheeler urban fleet cutting fulfillment costs by ~50%.
-- Omnichannel & Product Management:
-  * Full SDLC ownership (BRD/PRD, Figma, QA, Launch) positioning platform value at $27M.
-  * Proprietary BOSS engine (Buying, Operating, Selling & Saving) turning network grocers into micro-fulfillment dark stores.
-  * White-labeled B2C ordering app with Click & Collect, Ship-from-Store, and in-store 'Scan & Go' self-checkout with automated audio alerts.
-  * Full-funnel digital marketing (Meta/Google Ads, SEO, SEM, Klaviyo) reducing CAC by ~40%.
-- Transformation, Organization Design & Field Rigor:
-  * Personally deployed mobile SFA on ground with P&G distributor networks in Kenya.
-  * Enterprise SFA/DMS/ERP modernizations (SAP SD, Dynamics 365, Oracle e-CRM) for 5,000+ sales users across Britannia and Ivy Mobility.
-  * Computer vision / Image Recognition (IR) audits: Automated shelf-share analytics, stock-out detection, and predictive reordering linked to Tableau/Qlik.
-  * Macro Organization Design (OD) & Organization Effectiveness (OE) partner counseling C-suite leaders. Capability Champion networks, Train-the-Trainer (TTT), BMI (Business Measurement Index) distributor audits, and Kirkpatrick 70:20:10 learning frameworks.
+
+- Route-to-Market (RTM), Right Store & Sales Operations:
+  * Designed, adopted, and optimized direct, indirect, and hybrid RTM models across 6 GCC countries (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) and South India.
+  * Right Store Principles: Outlet segmentation, visit frequency targets, call productivity, time-in-store optimization, numeric distribution (ND), weighted distribution (WD), and Lines Per Call (LPC).
+  * Distributor Governance: Managed 250+ distributor networks, distributor contract economics, trade margins, drop-size thresholds, credit governance, and Order-to-Cash cycles.
+  * Techno-distribution: Monthly technological interventions per distributor to demonstrate tangible ROI and cost-to-serve reductions (>30%).
+
+- Sales Capability Building & Training Excellence:
+  * Certified Sales Trainer (CST), DOOR Training All-India Topper, SPIN Selling Certified.
+  * Spearheaded training wings at Britannia, Bharti Airtel, and Reliance Infocomm: TNA (Training Needs Analysis), 70:20:10 learning architecture, Train-the-Trainer (TTT), Buddy systems, and on-the-job coaching up to RSM level.
+  * Right Store Execution & Selling Skills: Championed territory planning, beat optimization, merchandising standards, visual identity, mystery audits, and new product launch (NPL) protocols.
+  * Performance Frameworks: Built BMI (Business Measurement Index) distributor infrastructure evaluation, Champion Scorecards, Star Ratings, and trade 'Profit Clubs'.
+  * Digitalized Learning: Pioneered transition to e-learning, mobile LMS, gamified learning modules, and automated capability tracking dashboards.
+
+- Digitalization Agenda & Commercial Analytics:
+  * Regional Data Hubs: Maintained data sanity across enterprise data hubs, connecting primary, secondary (sell-out), and tertiary retail data.
+  * Power BI & Reporting: Designed end-to-end Power BI executive and field dashboards for outlet coverage compliance, visit frequency, strike rates, drop sizes, and RTM cost-to-serve efficiency.
+  * Digital Tools: Supervised project management of SFA, DMS, ERP, and AI route/beat optimization systems for 5,000+ frontline users.
 """
 
 def load_custom_knowledge():
-    """Loads dynamically added Q&A knowledge from disk."""
     if os.path.exists(KNOWLEDGE_FILE):
         try:
             with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
@@ -275,7 +273,6 @@ def load_custom_knowledge():
     return []
 
 def save_custom_knowledge(new_entries):
-    """Appends validated Q&A context to the dynamic knowledge repository."""
     existing = load_custom_knowledge()
     existing.extend(new_entries)
     try:
@@ -286,13 +283,11 @@ def save_custom_knowledge(new_entries):
         return False
 
 def get_full_knowledge_context():
-    """Combines static deep achievements with persistent Q&A inputs."""
     custom_items = load_custom_knowledge()
     custom_text = "\n".join([f"- USER RECORDED FACT: Q: {item.get('q', '')} | A: {item.get('a', '')}" for item in custom_items])
     return MASTER_DEEP_EXPERIENCE + ("\n\nDYNAMICALLY STORED CUSTOM FACTS:\n" + custom_text if custom_text else "")
 
 def clean_ai_generated_text(text):
-    """Deterministic safeguard to prevent hallucinated phrasing and keep executive metrics clean."""
     if not isinstance(text, str):
         return text
     replacements = [
@@ -311,7 +306,6 @@ def clean_ai_generated_text(text):
     return text
 
 def sanitize_json_payload(data):
-    """Recursively cleans all strings in the AI output dictionary."""
     if isinstance(data, dict):
         return {k: sanitize_json_payload(v) for k, v in data.items()}
     elif isinstance(data, list):
@@ -343,7 +337,7 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     paragraph._p.append(hyperlink)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (LOCKED V1 BUILD)
+# 3. WORD RESUME ENGINE (DYNAMIC PAGE 2 TRACK ROUTING)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -378,7 +372,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    # ---------------- PAGE 1 (LOCKED V1) ----------------
+    # ---------------- PAGE 1 ----------------
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
     apply_xml_spacing(p_name, before_pt=0, after_pt=0, line_twips=278)
@@ -387,8 +381,8 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_name.font.name = 'Calibri'
     r_name.font.size = Pt(12)
 
-    f1 = tailored_data.get("header_focus_1", "Sales & Distribution Transformation Director")
-    f2 = tailored_data.get("header_focus_2", "Beauty & Personal Care Experience")
+    f1 = tailored_data.get("header_focus_1", "Sales Operations & Capability Director")
+    f2 = tailored_data.get("header_focus_2", "RTM & Commercial Excellence")
     
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -505,7 +499,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r_t.font.name = 'Calibri'
             r_t.font.size = Pt(10)
 
-    add_heading("EDUCATION", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
+    add_heading("EDUCATION & CERTIFICATIONS", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
     for idx, edu in enumerate(MASTER_STATIC['education']):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -551,7 +545,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_l2.font.name = 'Calibri'
     r_l2.font.size = Pt(10)
 
-    # ---------------- PAGE 2 (LOCKED V1) ----------------
+    # ---------------- PAGE 2 (DYNAMIC TRACK CONFIGURATION) ----------------
     doc.add_page_break()
 
     add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
@@ -570,9 +564,18 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             cell.width = col_widths[i]
             cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
-    h0 = tailored_data.get("exp_col_header_1", "Traditional FMCG Operator")
-    h1 = tailored_data.get("exp_col_header_2", "Digital FMCG Distribution")
-    h2 = tailored_data.get("exp_col_header_3", "Distribution Transformation")
+    # Determine Page 2 Layout Mode: "capability" or default "commercial"
+    page2_mode = tailored_data.get("page2_mode", "commercial")
+    
+    if page2_mode == "capability":
+        h0 = tailored_data.get("exp_col_header_1", "Sales Operations")
+        h1 = tailored_data.get("exp_col_header_2", "Sales Capability - Traditional")
+        h2 = tailored_data.get("exp_col_header_3", "Sales Capability - Digital")
+    else:
+        h0 = tailored_data.get("exp_col_header_1", "Traditional FMCG Operator")
+        h1 = tailored_data.get("exp_col_header_2", "Digital FMCG Distribution")
+        h2 = tailored_data.get("exp_col_header_3", "Distribution Transformation")
+
     hdr_titles = [h0, h1, h2]
 
     for i, title in enumerate(hdr_titles):
@@ -584,7 +587,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r = p.add_run(title)
         r.bold = True
         r.font.name = 'Calibri'
-        r.font.size = Pt(12)
+        r.font.size = Pt(11)
         tcPr = cell._tc.get_or_add_tcPr()
         tcPr.append(parse_xml(r'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="DCE6F1"/>'))
 
@@ -612,63 +615,118 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             if highlight_changes and item.get("highlight", False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    c0_items = [
-        {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 2},
-        {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
-        {"text": "Regional Sales & Capability Head- India", "bold": True, "size": 10, "space_after": 4},
-        {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 10},
-        {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 10},
-        {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 10},
-        {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 10},
-        {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 10, "space_after": 3},
-        {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 5},
-        {"text": "Commercial & Training Roles –", "bold": True, "size": 10, "space_after": 4},
-        {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 10},
-        {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 10}
-    ]
+    if page2_mode == "capability":
+        # COLUMN 1: SALES OPERATIONS (Britannia GCC RSM, Conektr Operations CEO, ADT Enterprise)
+        c0_items = [
+            {"text": "Britannia Industries Ltd | 2008 – 2011", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Regional Sales Manager (RSM) – GCC", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Directed sales operations and RTM across 6 GCC markets (UAE, KSA, Oman, Qatar, Bahrain, Kuwait) generating $100M+ NSV.", "is_bullet": True, "size": 10},
+            {"text": "Managed 6 master distributors & 250+ field force across GT, MT, Wholesale, and Horeca channels.", "is_bullet": True, "size": 10},
+            {"text": "Right Store Optimization: Implemented outlet profiling, call frequency compliance, and ~30% numeric distribution gain.", "is_bullet": True, "size": 10},
+            {"text": "Turnaround RSM: Shattered consecutive quarterly records; honored with Best Employee Award by Group MD.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Conektr Tech Global | 2016 – 2024", "bold": True, "size": 10, "space_before": 4},
+            {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Led complete distribution ops, P&L, supply chain, and trade margin architecture for 8,000+ B2B grocery outlets.", "is_bullet": True, "size": 10},
+            {"text": "Optimized RTM cost-to-serve by >30% using hybrid distribution, micro-dark stores, and dynamic routing.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "ADT USA / Tyco | 2001 – 2003", "bold": True, "size": 10, "space_before": 4},
+            {"text": "Business Development Manager", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Directed institutional route planning, territory coverage, contract governance, and corporate sales execution.", "is_bullet": True, "size": 10}
+        ]
 
+        # COLUMN 2: SALES CAPABILITY - TRADITIONAL (Britannia South India Capability, Airtel Karnataka, Reliance)
+        c1_items = [
+            {"text": "Britannia Industries Ltd | 2007 – 2008", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Regional Sales Capability Head – India", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Led sales training & capability architecture across South 1 & South 2 regions covering 200+ distributors & 600+ reps.", "is_bullet": True, "size": 10},
+            {"text": "Designed BMI (Business Measurement Index) DMS system for distributor infrastructure & sales standard audits.", "is_bullet": True, "size": 10},
+            {"text": "Established TTT, Star Rating, Champion Scorecards, and trade 'Profit Clubs' lifting LPC to ~120%.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Bharti Airtel Ltd | 2005 – 2007", "bold": True, "size": 10, "space_before": 4},
+            {"text": "Circle Sales Training Manager", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Established Karnataka Circle Training Wing; deployed induction, buddy programs, and SPIN selling techniques.", "is_bullet": True, "size": 10},
+            {"text": "Trained showroom & distributor teams on product tariffs, CRM, telephone etiquette, and mystery showroom audits.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Reliance Infocomm | 2003 – 2005", "bold": True, "size": 10, "space_before": 4},
+            {"text": "Sales Performance Coach / Manager", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Coached field teams on customer orientation, CDMA tariffs, and Samsung 'Slim' launch in Karnataka.", "is_bullet": True, "size": 10},
+            {"text": "Certified CST & DOOR Training All-India Topper; institutionalized 70:20:10 coaching standard.", "is_bullet": True, "size": 10}
+        ]
+
+        # COLUMN 3: SALES CAPABILITY - DIGITAL (Ivy Mobility, Conektr Platform, TransCPG / Power BI)
+        c2_items = [
+            {"text": "TransCPG & FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Board Advisor – Commercial Tech", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Advising CPG boards on RTM modernization, AI beat planning, and Power BI commercial analytics hubs.", "is_bullet": True, "size": 10},
+            {"text": "Integrated AI conversational coaching bots (Bid2Bill), reducing sales onboarding cycles by ~40%.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_before": 4},
+            {"text": "Business Head – MEA", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Deployed enterprise SaaS SFA/DMS across 22 top logos (P&G, Nestlé, Red Bull, GSK/Haleon, Coca-Cola).", "is_bullet": True, "size": 10},
+            {"text": "Led on-ground mobile sales tool enablement for P&G Kenya distributor force, ensuring 100% field adoption.", "is_bullet": True, "size": 10},
+            {"text": "Trained 3,000+ reps on automated route scheduling, Right Store execution, and digital order capture.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Conektr Tech Global | 2016 – 2024", "bold": True, "size": 10, "space_before": 4},
+            {"text": "Digital Sales Enablement & Power BI", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Built automated sales dashboards in Power BI and Dynamics 365, tracking call productivity & sell-out daily.", "is_bullet": True, "size": 10},
+            {"text": "Digitized retailer ordering (app/WhatsApp), pivoting reps to consultative sales coaches and category advisors.", "is_bullet": True, "size": 10}
+        ]
+
+    else:
+        # DEFAULT / COMMERCIAL & TRANSFORMATION MODE
+        c0_items = [
+            {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
+            {"text": "Regional Sales & Capability Head- India", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 10},
+            {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 10},
+            {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 10},
+            {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 10},
+            {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 5},
+            {"text": "Commercial & Training Roles –", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 10},
+            {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 10}
+        ]
+
+        conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
+        c1_items = [
+            {"text": "Digital FMCG Principal / Distributor", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10},
+            {"text": "May 2016 – Aug 2024", "size": 10, "space_after": 4},
+            {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 10},
+            {"text": conektr_cat, "is_bullet": True, "size": 10, "highlight": True},
+            {"text": "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.", "is_bullet": True, "size": 10},
+            {"text": "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.", "is_bullet": True, "size": 10},
+            {"text": "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.", "is_bullet": True, "size": 10},
+            {"text": "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.", "is_bullet": True, "size": 10},
+            {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 10}
+        ]
+
+        c2_items = [
+            {"text": "Post Exit –", "size": 10, "space_before": 2, "space_after": 3},
+            {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
+            {"text": "TransCPG Inc. &", "bold": True, "size": 10},
+            {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 10},
+            {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 10},
+            {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Business Head – MEA", "bold": True, "size": 10, "space_before": 5},
+            {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 10},
+            {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 10},
+            {"text": "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.", "is_bullet": True, "size": 10},
+            {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 10}
+        ]
+
+    # Injected contextual bullets (if present)
     c0_extra = tailored_data.get("column_1_extra_bullet", "")
     if c0_extra and c0_extra.strip():
-        c0_items.insert(7, {"text": c0_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
-
-    conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
-    c1_items = [
-        {"text": "Digital FMCG Principal / Distributor", "bold": True, "size": 10, "space_before": 2},
-        {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10, "space_after": 4},
-        {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10},
-        {"text": "May 2016 – Aug 2024", "size": 10, "space_after": 4},
-        {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 10},
-        {"text": conektr_cat, "is_bullet": True, "size": 10, "highlight": True},
-        {"text": "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.", "is_bullet": True, "size": 10},
-        {"text": "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.", "is_bullet": True, "size": 10},
-        {"text": "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.", "is_bullet": True, "size": 10},
-        {"text": "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.", "is_bullet": True, "size": 10},
-        {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 10}
-    ]
-
-    c2_items = [
-        {"text": "Post Exit –", "size": 10, "space_before": 2, "space_after": 3},
-        {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
-        {"text": "TransCPG Inc. &", "bold": True, "size": 10},
-        {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_after": 4},
-        {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 10},
-        {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 10},
-        {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 10, "space_after": 3},
-        {"text": "Business Head – MEA", "bold": True, "size": 10, "space_before": 5},
-        {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_after": 4},
-        {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 10},
-        {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 10},
-        {"text": "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.", "is_bullet": True, "size": 10},
-        {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 10}
-    ]
+        c0_items.insert(6, {"text": c0_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
 
     c1_extra = tailored_data.get("column_2_extra_bullet", "")
     if c1_extra and c1_extra.strip():
-        c1_items.insert(7, {"text": c1_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
+        c1_items.insert(6, {"text": c1_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
 
     c2_extra = tailored_data.get("column_3_extra_bullet", "")
     if c2_extra and c2_extra.strip():
-        c2_items.insert(4, {"text": c2_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
+        c2_items.insert(5, {"text": c2_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
 
     populate_cell_content(table.rows[1].cells[0], c0_items)
     populate_cell_content(table.rows[1].cells[1], c1_items)
@@ -902,7 +960,6 @@ def create_master_application_zip(comb_docx, review_docx, clean_docx):
     return zip_buffer.getvalue()
 
 def rebuild_all_documents():
-    """Helper to recompile all 3 docx files and zip bundle when state changes."""
     tailored_data = st.session_state["tailored_data"]
     cover_data = st.session_state["cover_data"]
     clean_docx = create_master_resume_docx(tailored_data, highlight_changes=False)
@@ -916,10 +973,10 @@ def rebuild_all_documents():
     st.session_state["master_zip"] = master_zip
 
 # ==============================================================================
-# 5. STREAMLIT FRONTEND & ENGINE CONTROLLER
+# 5. STREAMLIT FRONTEND & CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("Contextual Track Routing • Dynamic Model Pool • In-Place Revisions • Word (.docx) Suite")
+st.caption("Sales Operations & Capability Track • Dynamic 3-Column Experience • Word (.docx) Suite")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -1043,9 +1100,6 @@ with col1:
     with col_btn2:
         gap_analyze_btn = st.button("🧠 Analyze JD for Knowledge Gaps", type="secondary", use_container_width=True)
 
-    # ==============================================================================
-    # SECTION 1: INTELLIGENT GAP QUESTIONING & ARCHIVE FEEDER
-    # ==============================================================================
     if gap_analyze_btn:
         if not job_desc.strip():
             st.warning("Please paste a target Job Description first to analyze gaps.")
@@ -1064,7 +1118,7 @@ with col1:
 
                 TASK:
                 1. Identify any specific technical platforms, niche distribution models, regional compliance, or specialized duties in the JD that are not clearly documented in the candidate's archive.
-                2. Formulate 3 to 5 direct, precise questions asking the candidate if they have handled similar mandates (asking for company, scale, and concrete outcome).
+                2. Formulate 3 to 5 direct, precise questions asking the candidate if they have handled similar mandates.
                 3. If the archive already completely answers the JD with high-conviction metrics, state that the profile has 95%+ direct proof points.
 
                 Format output as a clean list of questions.
@@ -1086,8 +1140,8 @@ with col1:
         st.info(st.session_state["gap_questions"])
 
         st.markdown("##### 📝 Feed Answers to Master Knowledge Base")
-        st.caption("Paste your narrative answers below. They will be integrated and stored permanently to enrich this and all future applications.")
-        new_answers = st.text_area("Your Narrative Answers / Verified Specifics:", height=110, placeholder="Example: At Conektr, we handled Red Bull under an 18-month exclusive terms agreement...")
+        st.caption("Paste your narrative answers below. They will be integrated and stored permanently.")
+        new_answers = st.text_area("Your Narrative Answers / Verified Specifics:", height=110, placeholder="Example: Led Right Store deployment for 250+ distributors across 6 GCC countries...")
 
         if st.button("💾 Save Answers to Permanent Master Archive"):
             if not new_answers.strip():
@@ -1097,15 +1151,13 @@ with col1:
                     ingest_prompt = f"""
                     You are a knowledge base curator for Madhusudhanan Janakarajan.
                     Review the new facts provided by the candidate against their established background.
-                    Ensure there are no contradictions (e.g. candidate manages FMCG/CPG and tech, not boutique luxury retail).
                     Structure these new points into concise, permanent facts.
 
                     NEW CANDIDATE INPUTS:
                     {new_answers}
 
-                    Return a JSON array of objects, where each object has:
-                    "q": "What requirement does this answer?",
-                    "a": "Concise, verified fact with metrics and context"
+                    Return a JSON array of objects:
+                    [{{"q": "What requirement does this answer?", "a": "Concise verified fact with metrics and context"}}]
                     """
                     client = genai.Client(api_key=api_key)
                     try:
@@ -1116,14 +1168,14 @@ with col1:
                         )
                         parsed_new = json.loads(ing_resp.text.strip())
                         if save_custom_knowledge(parsed_new):
-                            st.success(f"✅ Successfully added {len(parsed_new)} new verified facts to your permanent archive! You can now click 'Generate' to use them.")
+                            st.success(f"✅ Successfully added {len(parsed_new)} new verified facts to your permanent archive! Click 'Generate' to use them.")
                             del st.session_state["gap_questions"]
                             st.rerun()
                     except Exception as e:
                         st.error(f"Archive Update Error: {str(e)}")
 
 # ==============================================================================
-# MAIN GENERATION CONTROLLER (ROUTING + DEEP ARCHIVE SYNTHESIS)
+# MAIN GENERATION CONTROLLER (DYNAMIC 3-COLUMN ROUTING)
 # ==============================================================================
 if generate_btn:
     if not job_desc or not job_desc.strip():
@@ -1132,74 +1184,82 @@ if generate_btn:
         st.error("API Key is missing. Please configure GEMINI_API_KEY in Streamlit Secrets.")
     else:
         with col2:
-            with st.spinner("⚡ High-Speed Synthesis: Applying contextual track routing and assembling documents..."):
+            with st.spinner("⚡ Tailoring Application Suite: Aligning Track, Experience Columns, and Word Suite..."):
                 archive_context = get_full_knowledge_context()
                 
                 prompt = f"""
-                You are an executive resume architect and career strategist for Madhusudhanan Janakarajan (23+ year FMCG, Digital Transformation & Enterprise Technology Executive).
+                You are an executive resume architect and career strategist for Madhusudhanan Janakarajan (23+ year FMCG, Sales Operations, Capability & Digital Transformation Executive).
 
-                Analyze the provided target Job Description (JD) and special instructions. Cross-reference with the comprehensive candidate archive below to extract company name, role title, and generate fully customized documents.
+                Analyze the target Job Description (JD) and special instructions. Cross-reference with the comprehensive candidate archive below to extract company name, role title, detected track, and generate fully customized documents.
 
                 CANDIDATE MASTER KNOWLEDGE ARCHIVE:
                 {archive_context}
 
-                TARGET TRACK ROUTING RULES (DETECT AUTOMATICALLY FROM JD):
-                - TRACK A (Commercial Leadership / RTM / Head of Sales / General Manager): Focus on $100M+ P&L, 6 GCC master distributors, 200+ India distributors, Net Sales Value (NSV), Gross Margin (GM), trade economics, drop-size thresholds, and multi-category scale (Britannia biscuits/dairy, Coca-Cola, Red Bull exclusivity, PepsiCo). Headers: "Traditional FMCG Operator" | "Digital FMCG Distribution" | "Distribution Transformation". Priority: commercial -> entrepreneurship -> transformation -> digital -> capability.
-                - TRACK B (Commercial Excellence / Transformation / Capability / OD): Prioritize sales capability, Capability Champion networks, Train-the-Trainer (TTT), SPIN Selling, Business Measurement Index (BMI) distributor audits, 70:20:10 learning models, and macro Organization Design (OD). Headers: "Commercial Capability Leadership" | "Distributor Ops Excellence" | "Enterprise Tech Transformation". Priority: capability -> transformation -> commercial -> digital -> entrepreneurship.
-                - TRACK C (Sales IT / Commercial IT / SFA-DMS Systems / Tech Solutions): Prioritize enterprise SaaS modernizations, Kenya on-ground P&G deployment, 1,000+ to 2,000+ sales user SFA rollouts, ERP-CRM-DMS integrations (SAP SD, Dynamics 365, Oracle), AI route optimization, Image Recognition (IR) audits, and analytics (Power BI, Alteryx, Tableau). Headers: "Core Commercial Operations" | "Digital Distribution Platforms" | "Enterprise Sales IT & SFA". Priority: transformation -> digital -> commercial -> capability -> entrepreneurship.
-                - TRACK D (Digital Commerce / Marketplace / Omnichannel / Product Leadership): Prioritize Conektr founding/scale (8,000+ B2B stores), BOSS loyalty micro-hubs, beverage volume share (>50% Red Bull, Coca-Cola, waters, health drinks), full SDLC ownership ($27M platform valuation), Click & Collect / Scan & Go store integrations, 2-wheeler last-mile logistics, 60% WhatsApp ordering mix, and $15M M&A exit to Al Maya Group. Headers: "Core FMCG Operator" | "Digital Marketplace & B2B2C" | "RTM Modernization Advisory". Priority: digital -> entrepreneurship -> commercial -> transformation -> capability.
+                TARGET TRACK ROUTING & PAGE 2 COLUMN DYNAMICS:
+                - CRITICAL EVALUATION: Does the JD focus on Sales Capability, Training, Sales Operations & Development, RTM / Right Store Execution, Commercial Excellence, or Sales Enablement (e.g. Mondelēz Sales Operations & Development Lead)?
+                  -> IF YES: 
+                     Set "page2_mode": "capability"
+                     Set "exp_col_header_1": "Sales Operations"
+                     Set "exp_col_header_2": "Sales Capability - Traditional"
+                     Set "exp_col_header_3": "Sales Capability - Digital"
+                     Set "capability_order": ["capability", "commercial", "transformation", "digital", "entrepreneurship"]
+
+                  -> IF NOT (e.g., pure General Management, E-Commerce, Marketplace, pure Sales IT):
+                     Set "page2_mode": "commercial"
+                     Use corresponding appropriate column headers (e.g. "Traditional FMCG Operator" | "Digital FMCG Distribution" | "Distribution Transformation").
 
                 STRICT EXECUTIVE WRITING RULES:
-                - NEVER spell out numbers or metric notations into words. Always write "360°" (NEVER "thirty-six-degree" or "360-degree"), "$100M+" (NEVER "one hundred million"), "23+ years" (NEVER "twenty-three years"), "8,000+" (NEVER "eight thousand"), and "~40%" (NEVER "forty percent").
+                - NEVER spell out numbers or metric notations into words. Always write "360°", "$100M+", "23+ years", "8,000+", and "~40%".
                 - Synthesize casual or informal special instructions into polished, authoritative executive phrasing.
 
                 JSON SCHEMA REQUIREMENTS:
                 1. IDENTIFY TARGET COMPANY & ROLE:
-                   - "target_company": Specific company name from JD.
-                   - "target_role": Specific role title from JD.
+                   - "target_company": Specific company name from JD (e.g., "Mondelēz International").
+                   - "target_role": Specific role title from JD (e.g., "Sales Operations & Development Lead").
+                   - "page2_mode": "capability" OR "commercial".
 
                 2. HEADER SUBTITLE DUAL VARIABLES:
                    - Format: "[header_focus_1] | FMCG | GTM & Omnichannel Leader | [header_focus_2]"
                    - "header_focus_1": Target leadership title matching JD. Max 36 chars.
-                   - "header_focus_2": Specialized domain focus matching JD. Max 40 chars.
+                   - "header_focus_2": Specialized domain focus matching JD (e.g. "RTM & Sales Capability Architecture"). Max 40 chars.
 
                 3. EXECUTIVE SUMMARY (STRICTLY 155 TO 170 WORDS / EXACTLY 8 FULL JUSTIFIED LINES):
-                   - Authoritative, high-impact, passionate executive summary of EXACTLY 155 to 170 words tailored directly to the detected track and target company.
+                   - Authoritative, high-impact executive summary of EXACTLY 155 to 170 words tailored directly to the JD.
                    - Must completely fill 8 full justified lines in Calibri 10pt (line spacing multiple 1.16).
-                   - Deliver a compelling narrative covering 23+ years driving FMCG commercial strategy, 360° operational vantage, entrepreneurship, and measurable enterprise results.
+                   - Deliver a compelling narrative covering 23+ years driving FMCG commercial strategy, RTM redesign, Right Store execution, sales training/capability building, regional Power BI data hubs, and distributor governance.
 
-                4. CAPABILITY ORDERING (PRIORITIZATION):
+                4. CAPABILITY ORDERING:
                    - Array of all 5 capability keys ordered by detected track priority.
 
-                5. EXPERIENCE COLUMN HEADERS (3 COLUMNS):
-                   - "exp_col_header_1": Title for Column 1 matching detected track.
-                   - "exp_col_header_2": Title for Column 2 matching detected track.
-                   - "exp_col_header_3": Title for Column 3 matching detected track.
+                5. EXPERIENCE COLUMN HEADERS:
+                   - "exp_col_header_1": Column 1 Title.
+                   - "exp_col_header_2": Column 2 Title.
+                   - "exp_col_header_3": Column 3 Title.
 
                 6. CONEKTR CATEGORY BULLET:
-                   - Category aggregation bullet strictly tailored to products/domain of the target company.
+                   - Category aggregation bullet tailored to categories of target company (e.g., snacking, confectionery, biscuits, beverages).
 
                 7. DYNAMIC EXPERIENCE INJECTIONS (STRICT 18 TO 24 WORDS EACH):
-                   - "column_1_extra_bullet": 18-24 words under Britannia / Traditional FMCG regarding Route-to-Market, distributor governance, or commercial expansion aligned with JD, else "".
-                   - "column_2_extra_bullet": 18-24 words under Conektr (Digital FMCG) aligned with JD, else "".
-                   - "column_3_extra_bullet": 18-24 words under TransCPG/Ivy (Transformation) aligned with JD, else "".
+                   - "column_1_extra_bullet": 18-24 words under Britannia / Operations regarding RTM models, Right Store execution, or distributor compliance.
+                   - "column_2_extra_bullet": 18-24 words under Capability / Training regarding TTT, 70:20:10, SPIN selling, or distributor infrastructure audits.
+                   - "column_3_extra_bullet": 18-24 words under Digital / Transformation regarding Power BI data hubs, digital tools, or automated KPI tracking.
 
                 8. ATS MATCH SCORE (INTEGER 88-97):
                    - "ats_match_score": Integer reflecting alignment with provided JD.
 
                 9. COVER LETTER & MATCH MATRIX:
                    - "subject_line": "Application for [Target Role] - [Target Company]"
-                   - "cover_para_1": Authoritative opening explicitly referencing company name, role title, and candidate's 23+ year track record.
-                   - "cover_para_2": Direct alignment with company's commercial/digital priorities based on JD & special instructions.
+                   - "cover_para_1": Authoritative opening referencing company name, role title, and 23+ year track record.
+                   - "cover_para_2": Direct alignment with target company's commercial execution, Right Store, RTM, and capability priorities.
                    - "cover_bullets": 4 high-impact bullets formatted as "Bold Category: Detailed metric description":
-                     1) Global Distributor Management & Commercial Governance: ...
-                     2) Enterprise Digital Architecture & SFA Systems: ...
-                     3) Measurable P&L & Operational ROI: ...
-                     4) Cross-Functional Leadership & Partner Strategy: ...
+                     1) RTM Strategy & Distributor Governance: ...
+                     2) Sales Capability Building & Right Store Execution: ...
+                     3) Digitalization, Data Stewardship & Power BI: ...
+                     4) Cross-Functional Commercial Leadership: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
                    - "matrix_items": Array of EXACTLY 6 rich, highly detailed competency rows mapping JD pillars to quantifiable candidate evidence.
                      * "requirement_title": Concise single statement of the requirement.
-                     * "match_desc": Detailed, high-evidence paragraph with specific achievements, platforms, and metrics (without duplicate bold prefixes).
+                     * "match_desc": Detailed paragraph with specific achievements, platforms, and metrics.
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -1211,10 +1271,11 @@ if generate_btn:
                 {{
                   "target_company": "string",
                   "target_role": "string",
+                  "page2_mode": "capability",
                   "header_focus_1": "string",
                   "header_focus_2": "string",
                   "executive_summary": "string",
-                  "capability_order": ["string", "string", "string", "string", "string"],
+                  "capability_order": ["capability", "commercial", "transformation", "digital", "entrepreneurship"],
                   "exp_col_header_1": "string",
                   "exp_col_header_2": "string",
                   "exp_col_header_3": "string",
@@ -1222,7 +1283,7 @@ if generate_btn:
                   "column_1_extra_bullet": "string",
                   "column_2_extra_bullet": "string",
                   "column_3_extra_bullet": "string",
-                  "ats_match_score": 94,
+                  "ats_match_score": 95,
                   "cover_letter_data": {{
                     "target_company": "string",
                     "subject_line": "string",
@@ -1263,7 +1324,7 @@ if generate_btn:
 
                     ordered_keys = parsed_json.get(
                         "capability_order",
-                        ["commercial", "digital", "transformation", "capability", "entrepreneurship"],
+                        ["capability", "commercial", "transformation", "digital", "entrepreneurship"],
                     )
                     full_capabilities = [BASE_CAPABILITIES[k] for k in ordered_keys if k in BASE_CAPABILITIES]
                     for k, cap_text in BASE_CAPABILITIES.items():
@@ -1286,18 +1347,18 @@ if generate_btn:
                     st.error(f"Generation Error: {last_error}")
 
 # ==============================================================================
-# 6. PERSISTENT DISPLAY & SECTION 2: IN-PLACE REVISION ENGINE (3-DOCX SUITE)
+# 6. PERSISTENT DISPLAY & IN-PLACE REVISION ENGINE
 # ==============================================================================
 if st.session_state.get("has_results", False):
     with col2:
         tailored_data = st.session_state["tailored_data"]
         cover_data = st.session_state.get("cover_data", {})
-        score = tailored_data.get("ats_match_score", 94)
+        score = tailored_data.get("ats_match_score", 95)
         target_co = tailored_data.get("target_company", "Target Organization")
         target_rl = tailored_data.get("target_role", "Executive Position")
 
         st.subheader(f"2. Application Pack: {target_co}")
-        st.caption(f"Role: **{target_rl}**")
+        st.caption(f"Role: **{target_rl}** | Page 2 Layout Mode: **{tailored_data.get('page2_mode', 'commercial').upper()}**")
 
         st.markdown(
             f"""
@@ -1380,15 +1441,12 @@ if st.session_state.get("has_results", False):
                 use_container_width=True,
             )
 
-        # ==============================================================================
-        # SECTION 2: IN-PLACE LIVE CORRECTIONS & RE-RENDERING
-        # ==============================================================================
         st.markdown("---")
         st.subheader("✍️ Instant Revisions / Feedback on Current Pack")
-        st.caption("Request quick tweaks to this specific pack without re-pasting the JD. The AI will revise and update the downloads above in place.")
+        st.caption("Request quick tweaks to this specific pack without re-pasting the JD. The AI will revise and update the downloads in place.")
 
         correction_text = st.text_area(
-            "Enter corrections or adjustments (e.g., 'Make match matrix points more detailed', 'Emphasize beverage distribution more in the summary'):",
+            "Enter corrections or adjustments:",
             height=85,
             placeholder="Type your adjustments here...",
         )
@@ -1408,10 +1466,10 @@ if st.session_state.get("has_results", False):
                     {correction_text}
 
                     STRICT REVISION RULES:
-                    1. Apply the user's specific corrections directly to the relevant fields (e.g. executive_summary, matrix_items, cover_para, or bullet points).
+                    1. Apply user corrections directly to the relevant fields.
                     2. Maintain all existing locked metrics and structures that were not asked to be changed.
-                    3. NEVER write numbers as words. Ensure '360°', '$100M+', '23+ years', '8,000+', and '~40%' remain in numeric form.
-                    4. Keep the executive_summary between 155 and 170 words (exactly 8 lines in 10pt Calibri).
+                    3. NEVER write numbers as words. Ensure '360°', '$100M+', '23+ years', '8,000+', and '~40%' remain numeric.
+                    4. Keep executive_summary between 155 and 170 words (exactly 8 lines in 10pt Calibri).
                     5. Ensure matrix_items contain 6 detailed, metric-backed proof points.
 
                     Return ONLY the updated JSON with all fields intact.
@@ -1436,7 +1494,7 @@ if st.session_state.get("has_results", False):
 
                         ordered_keys = rev_json.get(
                             "capability_order",
-                            ["commercial", "digital", "transformation", "capability", "entrepreneurship"],
+                            ["capability", "commercial", "transformation", "digital", "entrepreneurship"],
                         )
                         full_caps = [BASE_CAPABILITIES[k] for k in ordered_keys if k in BASE_CAPABILITIES]
                         for k, cap_t in BASE_CAPABILITIES.items():
@@ -1455,13 +1513,9 @@ if st.session_state.get("has_results", False):
         with st.expander("🔍 View AI Tailored Dynamic Variables"):
             st.write("**Identified Company:**", target_co)
             st.write("**Identified Role:**", target_rl)
-            st.write("**Header Focus 1:**", tailored_data.get("header_focus_1"))
-            st.write("**Header Focus 2:**", tailored_data.get("header_focus_2"))
+            st.write("**Page 2 Mode:**", tailored_data.get("page2_mode"))
             st.write("**Column 1 Header:**", tailored_data.get("exp_col_header_1"))
             st.write("**Column 2 Header:**", tailored_data.get("exp_col_header_2"))
             st.write("**Column 3 Header:**", tailored_data.get("exp_col_header_3"))
             st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
-            st.write("**Injected Bullet (Britannia/Traditional):**", tailored_data.get("column_1_extra_bullet"))
-            st.write("**Injected Bullet (Conektr):**", tailored_data.get("column_2_extra_bullet"))
-            st.write("**Injected Bullet (TransCPG/Ivy):**", tailored_data.get("column_3_extra_bullet"))
             st.write("**Match Matrix Rows Generated:**", len(cover_data.get("matrix_items", [])))
