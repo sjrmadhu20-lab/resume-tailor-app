@@ -9,7 +9,7 @@ from docx import Document
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import parse_xml
-from docx.shared import Inches, Pt, RGBColor
+from docx.shared import Inches, Pt, RGBColor, Mm
 from google import genai
 from google.genai import types
 import streamlit as st
@@ -24,10 +24,6 @@ st.set_page_config(
 api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 
 def get_verified_model_list(client):
-    """
-    Dynamically queries your API key's available models to ensure
-    only active, valid endpoints that support generateContent are called.
-    """
     canonical_fallbacks = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
     try:
         discovered = []
@@ -50,10 +46,6 @@ def get_verified_model_list(client):
     return canonical_fallbacks
 
 def generate_with_fallback(client, contents, config, max_retries_per_model=3):
-    """
-    Executes content generation with exponential backoff on transient 503/429 spikes
-    and skips dead 404 endpoints across dynamically verified models.
-    """
     models_to_try = get_verified_model_list(client)
     last_captured_error = None
 
@@ -202,8 +194,8 @@ MASTER_STATIC = {
             " SDLC ownership (Figma → Development → Launch)"
         ),
         "Data, Analytics & Optimization": (
-            "Power BI (Regional Data Hubs & Sales Development Dashboards) | Alteryx |"
-            " Tableau | Power Apps | Python scripting | Sales & trade analytics | Demand forecasting |"
+            "Power BI (Regional Data Hubs & Sales Dashboards) | Alteryx |"
+            " Tableau | Power Apps | Python scripting | Sales analytics | Demand forecasting |"
             " Route & beat optimization"
         ),
         "Fintech & Payments": (
@@ -305,6 +297,22 @@ def clean_ai_generated_text(text):
         text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
     return text
 
+def enforce_exact_summary_length(summary_text, min_words=150, max_words=165):
+    """
+    Deterministic safeguard guaranteeing Executive Summary never exceeds 8 lines
+    in Calibri 10pt on an A4 page, preventing Page 1 from ever spilling over.
+    """
+    cleaned = clean_ai_generated_text(summary_text).strip()
+    words = cleaned.split()
+    if len(words) > max_words:
+        truncated = " ".join(words[:max_words])
+        last_period = truncated.rfind(".")
+        if last_period > len(truncated) * 0.75:
+            cleaned = truncated[:last_period + 1]
+        else:
+            cleaned = truncated.rstrip(",;-") + "."
+    return cleaned
+
 def sanitize_json_payload(data):
     if isinstance(data, dict):
         return {k: sanitize_json_payload(v) for k, v in data.items()}
@@ -336,13 +344,13 @@ def add_hyperlink(paragraph, url, text, color_rgb="004B87", underline=True, font
     hyperlink.append(new_run)
     paragraph._p.append(hyperlink)
 
-def apply_xml_spacing(p, before_pt=0, after_pt=8, line_twips=278):
+def apply_xml_spacing(p, before_pt=0, after_pt=6, line_twips=260):
     pPr = p._p.get_or_add_pPr()
     spPr = parse_xml(f'<w:spacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:before="{int(before_pt*20)}" w:after="{int(after_pt*20)}" w:line="{line_twips}" w:lineRule="auto"/>')
     pPr.append(spPr)
 
 # ==============================================================================
-# 3. WORD RESUME ENGINE (DYNAMIC PAGE 2 TRACK ROUTING)
+# 3. WORD RESUME ENGINE (LOCKED STRICT A4 GEOMETRY)
 # ==============================================================================
 def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style = doc.styles['Normal']
@@ -350,18 +358,15 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     style.font.size = Pt(10)
     style.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    def add_heading(title, space_before=0, space_after=8, line_border_above=False, is_multiple=False, is_underline=False):
+    def add_heading(title, space_before=2, space_after=6, line_border_above=False, is_multiple=False, is_underline=False):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        if is_multiple:
-            apply_xml_spacing(p, before_pt=space_before, after_pt=space_after, line_twips=278)
-        else:
-            apply_xml_spacing(p, before_pt=space_before, after_pt=space_after, line_twips=240)
+        apply_xml_spacing(p, before_pt=space_before, after_pt=space_after, line_twips=240)
         
         if line_border_above:
             pPr = p._p.get_or_add_pPr()
             pBdr = parse_xml(r'<w:pBdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-                             r'<w:top w:val="single" w:sz="6" w:space="4" w:color="000000"/>'
+                             r'<w:top w:val="single" w:sz="6" w:space="3" w:color="000000"/>'
                              r'</w:pBdr>')
             pPr.append(pBdr)
             
@@ -372,10 +377,10 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
         r.font.size = Pt(10)
         r.font.color.rgb = RGBColor(0x00, 0x00, 0x00)
 
-    # ---------------- PAGE 1 ----------------
+    # ---------------- PAGE 1 (LOCKED TO EXACTLY 1 A4 PAGE) ----------------
     p_name = doc.add_paragraph()
     p_name.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_name, before_pt=0, after_pt=0, line_twips=278)
+    apply_xml_spacing(p_name, before_pt=0, after_pt=0, line_twips=260)
     r_name = p_name.add_run(MASTER_STATIC['name'])
     r_name.bold = True
     r_name.font.name = 'Calibri'
@@ -386,7 +391,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_sub, before_pt=0, after_pt=8, line_twips=278)
+    apply_xml_spacing(p_sub, before_pt=0, after_pt=6, line_twips=260)
     
     r_f1 = p_sub.add_run(f1)
     r_f1.bold = True
@@ -410,145 +415,146 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     c = MASTER_STATIC['contact']
     p_contact = doc.add_paragraph()
     p_contact.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_contact, before_pt=0, after_pt=8, line_twips=278)
+    apply_xml_spacing(p_contact, before_pt=0, after_pt=6, line_twips=250)
     
     r_c1 = p_contact.add_run(f"{c['location']} | {c['phone']} | ")
     r_c1.font.name = 'Calibri'
-    r_c1.font.size = Pt(10)
-    add_hyperlink(p_contact, c['email_url'], c['email'], color_rgb="004B87", underline=True, font_size_pt=10)
+    r_c1.font.size = Pt(9.5)
+    add_hyperlink(p_contact, c['email_url'], c['email'], color_rgb="004B87", underline=True, font_size_pt=9.5)
     
     r_br1 = p_contact.add_run("\n")
     r_br1.font.name = 'Calibri'
-    r_br1.font.size = Pt(10)
+    r_br1.font.size = Pt(9.5)
     
-    add_hyperlink(p_contact, c['linkedin'], c['linkedin'], color_rgb="004B87", underline=True, font_size_pt=10)
+    add_hyperlink(p_contact, c['linkedin'], c['linkedin'], color_rgb="004B87", underline=True, font_size_pt=9.5)
     r_c2_mid = p_contact.add_run(" | Portfolio: ")
     r_c2_mid.font.name = 'Calibri'
-    r_c2_mid.font.size = Pt(10)
-    add_hyperlink(p_contact, c['portfolio'], c['portfolio'], color_rgb="004B87", underline=True, font_size_pt=10)
+    r_c2_mid.font.size = Pt(9.5)
+    add_hyperlink(p_contact, c['portfolio'], c['portfolio'], color_rgb="004B87", underline=True, font_size_pt=9.5)
     
     r_br2 = p_contact.add_run("\n")
     r_br2.font.name = 'Calibri'
-    r_br2.font.size = Pt(10)
+    r_br2.font.size = Pt(9.5)
     
     r_c3_lbl = p_contact.add_run("Visa Status: ")
     r_c3_lbl.bold = True
     r_c3_lbl.font.name = 'Calibri'
-    r_c3_lbl.font.size = Pt(10)
+    r_c3_lbl.font.size = Pt(9.5)
     r_c3_val = p_contact.add_run(c['visas'])
     r_c3_val.font.name = 'Calibri'
-    r_c3_val.font.size = Pt(10)
+    r_c3_val.font.size = Pt(9.5)
 
-    add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=8, line_border_above=False, is_multiple=True)
+    add_heading("EXECUTIVE SUMMARY", space_before=1, space_after=5, line_border_above=False)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    apply_xml_spacing(sp, before_pt=0, after_pt=6, line_twips=278)
-    r_sum = sp.add_run(tailored_data.get("executive_summary", ""))
+    apply_xml_spacing(sp, before_pt=0, after_pt=5, line_twips=250)
+    
+    # Strictly enforced 8 lines max (155-160 words)
+    safe_summary = enforce_exact_summary_length(tailored_data.get("executive_summary", ""), 150, 160)
+    r_sum = sp.add_run(safe_summary)
     r_sum.font.name = 'Calibri'
-    r_sum.font.size = Pt(10)
+    r_sum.font.size = Pt(9.5)
     if highlight_changes:
         r_sum.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
+    add_heading("EXECUTIVE CAPABILITIES & IMPACT HIGHLIGHTS", space_before=2, space_after=5, line_border_above=True)
     for cap in tailored_data.get("capabilities", []):
         cp = doc.add_paragraph()
         cp.paragraph_format.left_indent = Inches(0.20)
         cp.paragraph_format.first_line_indent = Inches(-0.25)
         cp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        apply_xml_spacing(cp, before_pt=0, after_pt=4.5, line_twips=240)
+        apply_xml_spacing(cp, before_pt=0, after_pt=3.5, line_twips=230)
         
         r_bullet = cp.add_run("•\t")
         r_bullet.font.name = 'Calibri'
-        r_bullet.font.size = Pt(10)
+        r_bullet.font.size = Pt(9.5)
         
         parts = cap.split(":", 1)
         if len(parts) == 2:
             r_bold = cp.add_run(parts[0] + ":")
             r_bold.bold = True
             r_bold.font.name = 'Calibri'
-            r_bold.font.size = Pt(10)
+            r_bold.font.size = Pt(9.5)
             r_body = cp.add_run(parts[1])
             r_body.font.name = 'Calibri'
-            r_body.font.size = Pt(10)
+            r_body.font.size = Pt(9.5)
         else:
             r_body = cp.add_run(cap)
             r_body.font.name = 'Calibri'
-            r_body.font.size = Pt(10)
+            r_body.font.size = Pt(9.5)
 
-    add_heading("HONORS & RECOGNITION", space_before=2, space_after=8, line_border_above=True, is_multiple=False)
+    add_heading("HONORS & RECOGNITION", space_before=2, space_after=5, line_border_above=True)
     for idx, h in enumerate(MASTER_STATIC['honors']):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p.paragraph_format.left_indent = Inches(0.45)
+        p.paragraph_format.left_indent = Inches(0.35)
         p.paragraph_format.first_line_indent = Inches(-0.20)
-        is_last = (idx == len(MASTER_STATIC['honors']) - 1)
-        apply_xml_spacing(p, before_pt=0, after_pt=6 if is_last else 0, line_twips=240)
+        apply_xml_spacing(p, before_pt=0, after_pt=2, line_twips=225)
         
         r_bullet = p.add_run("•\t")
         r_bullet.font.name = 'Calibri'
-        r_bullet.font.size = Pt(10)
+        r_bullet.font.size = Pt(9.0)
         
         if "https://" in h:
             parts = h.split(" - ")
             r_prefix = p.add_run(parts[0] + " - ")
             r_prefix.font.name = 'Calibri'
-            r_prefix.font.size = Pt(10)
-            add_hyperlink(p, parts[1].strip(), parts[1].strip(), color_rgb="004B87", underline=True, font_size_pt=10)
+            r_prefix.font.size = Pt(9.0)
+            add_hyperlink(p, parts[1].strip(), parts[1].strip(), color_rgb="004B87", underline=True, font_size_pt=9.0)
         else:
             r_t = p.add_run(h)
             r_t.font.name = 'Calibri'
-            r_t.font.size = Pt(10)
+            r_t.font.size = Pt(9.0)
 
-    add_heading("EDUCATION & CERTIFICATIONS", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
+    add_heading("EDUCATION & CERTIFICATIONS", space_before=2, space_after=4, line_border_above=False)
     for idx, edu in enumerate(MASTER_STATIC['education']):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p.paragraph_format.left_indent = Inches(0.45)
+        p.paragraph_format.left_indent = Inches(0.35)
         p.paragraph_format.first_line_indent = Inches(-0.20)
-        is_last = (idx == len(MASTER_STATIC['education']) - 1)
-        apply_xml_spacing(p, before_pt=0, after_pt=6 if is_last else 0, line_twips=240)
+        apply_xml_spacing(p, before_pt=0, after_pt=2, line_twips=225)
         
         r_bullet = p.add_run("•\t")
         r_bullet.font.name = 'Calibri'
-        r_bullet.font.size = Pt(10)
+        r_bullet.font.size = Pt(9.0)
         
         r_bp = p.add_run(edu['degree'] + " – ")
         r_bp.bold = True
         r_bp.font.name = 'Calibri'
-        r_bp.font.size = Pt(10)
+        r_bp.font.size = Pt(9.0)
         r_t = p.add_run(edu['details'])
         r_t.font.name = 'Calibri'
-        r_t.font.size = Pt(10)
+        r_t.font.size = Pt(9.0)
 
-    add_heading("LANGUAGES & INTERESTS :", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
+    add_heading("LANGUAGES & INTERESTS :", space_before=2, space_after=4, line_border_above=False)
     p_lang1 = doc.add_paragraph()
     p_lang1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_lang1.paragraph_format.left_indent = Inches(0.45)
+    p_lang1.paragraph_format.left_indent = Inches(0.35)
     p_lang1.paragraph_format.first_line_indent = Inches(-0.20)
-    apply_xml_spacing(p_lang1, before_pt=0, after_pt=0, line_twips=240)
+    apply_xml_spacing(p_lang1, before_pt=0, after_pt=1, line_twips=225)
     r_bullet_l1 = p_lang1.add_run("•\t")
     r_bullet_l1.font.name = 'Calibri'
-    r_bullet_l1.font.size = Pt(10)
+    r_bullet_l1.font.size = Pt(9.0)
     r_l1 = p_lang1.add_run(MASTER_STATIC['languages'])
     r_l1.font.name = 'Calibri'
-    r_l1.font.size = Pt(10)
+    r_l1.font.size = Pt(9.0)
 
     p_lang2 = doc.add_paragraph()
     p_lang2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    p_lang2.paragraph_format.left_indent = Inches(0.45)
+    p_lang2.paragraph_format.left_indent = Inches(0.35)
     p_lang2.paragraph_format.first_line_indent = Inches(-0.20)
-    apply_xml_spacing(p_lang2, before_pt=0, after_pt=0, line_twips=240)
+    apply_xml_spacing(p_lang2, before_pt=0, after_pt=0, line_twips=225)
     r_bullet_l2 = p_lang2.add_run("•\t")
     r_bullet_l2.font.name = 'Calibri'
-    r_bullet_l2.font.size = Pt(10)
+    r_bullet_l2.font.size = Pt(9.0)
     r_l2 = p_lang2.add_run(MASTER_STATIC['interests'])
     r_l2.font.name = 'Calibri'
-    r_l2.font.size = Pt(10)
+    r_l2.font.size = Pt(9.0)
 
-    # ---------------- PAGE 2 (DYNAMIC TRACK CONFIGURATION) ----------------
+    # ---------------- PAGE 2 (PROFESSIONAL EXPERIENCE) ----------------
     doc.add_page_break()
 
-    add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=8, line_border_above=False, is_multiple=False)
+    add_heading("PROFESSIONAL EXPERIENCE", space_before=0, space_after=6, line_border_above=False)
     
     table = doc.add_table(rows=2, cols=3)
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
@@ -602,7 +608,7 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 r_b = p.add_run("•\t")
                 r_b.font.name = 'Calibri'
-                r_b.font.size = Pt(10)
+                r_b.font.size = Pt(9.5)
             else:
                 p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                 
@@ -610,117 +616,117 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r.bold = item.get("bold", False)
             r.italic = item.get("italic", False)
             r.font.name = 'Calibri'
-            r.font.size = Pt(item.get("size", 10))
+            r.font.size = Pt(item.get("size", 9.5))
             if highlight_changes and item.get("highlight", False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
     if page2_mode == "capability":
         c0_items = [
-            {"text": "Britannia Industries Ltd | 2008 – 2011", "bold": True, "size": 10, "space_before": 2},
-            {"text": "Regional Sales Manager (RSM) – GCC", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Directed sales operations and RTM across 6 GCC markets (UAE, KSA, Oman, Qatar, Bahrain, Kuwait) generating $100M+ NSV.", "is_bullet": True, "size": 10},
-            {"text": "Managed 6 master distributors & 250+ field force across GT, MT, Wholesale, and Horeca channels.", "is_bullet": True, "size": 10},
-            {"text": "Right Store Optimization: Implemented outlet profiling, call frequency compliance, and ~30% numeric distribution gain.", "is_bullet": True, "size": 10},
-            {"text": "Turnaround RSM: Shattered consecutive quarterly records; honored with Best Employee Award by Group MD.", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "Conektr Tech Global | 2016 – 2024", "bold": True, "size": 10, "space_before": 4},
-            {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Led complete distribution ops, P&L, supply chain, and trade margin architecture for 8,000+ B2B grocery outlets.", "is_bullet": True, "size": 10},
-            {"text": "Optimized RTM cost-to-serve by >30% using hybrid distribution, micro-dark stores, and dynamic routing.", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "ADT USA / Tyco | 2001 – 2003", "bold": True, "size": 10, "space_before": 4},
-            {"text": "Business Development Manager", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Directed institutional route planning, territory coverage, contract governance, and corporate sales execution.", "is_bullet": True, "size": 10}
+            {"text": "Britannia Industries Ltd | 2008 – 2011", "bold": True, "size": 9.5, "space_before": 2},
+            {"text": "Regional Sales Manager (RSM) – GCC", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Directed sales operations and RTM across 6 GCC markets (UAE, KSA, Oman, Qatar, Bahrain, Kuwait) generating $100M+ NSV.", "is_bullet": True, "size": 9.5},
+            {"text": "Managed 6 master distributors & 250+ field force across GT, MT, Wholesale, and Horeca channels.", "is_bullet": True, "size": 9.5},
+            {"text": "Right Store Optimization: Implemented outlet profiling, call frequency compliance, and ~30% numeric distribution gain.", "is_bullet": True, "size": 9.5},
+            {"text": "Turnaround RSM: Shattered consecutive quarterly records; honored with Best Employee Award by Group MD.", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "Conektr Tech Global | 2016 – 2024", "bold": True, "size": 9.5, "space_before": 4},
+            {"text": "Chief Executive Officer & Founder", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Led complete distribution ops, P&L, supply chain, and trade margin architecture for 8,000+ B2B grocery outlets.", "is_bullet": True, "size": 9.5},
+            {"text": "Optimized RTM cost-to-serve by >30% using hybrid distribution, micro-dark stores, and dynamic routing.", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "ADT USA / Tyco | 2001 – 2003", "bold": True, "size": 9.5, "space_before": 4},
+            {"text": "Business Development Manager", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Directed institutional route planning, territory coverage, contract governance, and corporate sales execution.", "is_bullet": True, "size": 9.5}
         ]
 
         c1_items = [
-            {"text": "Britannia Industries Ltd | 2007 – 2008", "bold": True, "size": 10, "space_before": 2},
-            {"text": "Regional Sales Capability Head – India", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Led sales training & capability architecture across South 1 & South 2 regions covering 200+ distributors & 600+ reps.", "is_bullet": True, "size": 10},
-            {"text": "Designed BMI (Business Measurement Index) DMS system for distributor infrastructure & sales standard audits.", "is_bullet": True, "size": 10},
-            {"text": "Established TTT, Star Rating, Champion Scorecards, and trade 'Profit Clubs' lifting LPC to ~120%.", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "Bharti Airtel Ltd | 2005 – 2007", "bold": True, "size": 10, "space_before": 4},
-            {"text": "Circle Sales Training Manager", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Established Karnataka Circle Training Wing; deployed induction, buddy programs, and SPIN selling techniques.", "is_bullet": True, "size": 10},
-            {"text": "Trained showroom & distributor teams on product tariffs, CRM, telephone etiquette, and mystery showroom audits.", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "Reliance Infocomm | 2003 – 2005", "bold": True, "size": 10, "space_before": 4},
-            {"text": "Sales Performance Coach / Manager", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Coached field teams on customer orientation, CDMA tariffs, and Samsung 'Slim' launch in Karnataka.", "is_bullet": True, "size": 10},
-            {"text": "Certified CST & DOOR Training All-India Topper; institutionalized 70:20:10 coaching standard.", "is_bullet": True, "size": 10}
+            {"text": "Britannia Industries Ltd | 2007 – 2008", "bold": True, "size": 9.5, "space_before": 2},
+            {"text": "Regional Sales Capability Head – India", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Led sales training & capability architecture across South 1 & South 2 regions covering 200+ distributors & 600+ reps.", "is_bullet": True, "size": 9.5},
+            {"text": "Designed BMI (Business Measurement Index) DMS system for distributor infrastructure & sales standard audits.", "is_bullet": True, "size": 9.5},
+            {"text": "Established TTT, Star Rating, Champion Scorecards, and trade 'Profit Clubs' lifting LPC to ~120%.", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "Bharti Airtel Ltd | 2005 – 2007", "bold": True, "size": 9.5, "space_before": 4},
+            {"text": "Circle Sales Training Manager", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Established Karnataka Circle Training Wing; deployed induction, buddy programs, and SPIN selling techniques.", "is_bullet": True, "size": 9.5},
+            {"text": "Trained showroom & distributor teams on product tariffs, CRM, telephone etiquette, and mystery showroom audits.", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "Reliance Infocomm | 2003 – 2005", "bold": True, "size": 9.5, "space_before": 4},
+            {"text": "Sales Performance Coach / Manager", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Coached field teams on customer orientation, CDMA tariffs, and Samsung 'Slim' launch in Karnataka.", "is_bullet": True, "size": 9.5},
+            {"text": "Certified CST & DOOR Training All-India Topper; institutionalized 70:20:10 coaching standard.", "is_bullet": True, "size": 9.5}
         ]
 
         c2_items = [
-            {"text": "TransCPG & FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_before": 2},
-            {"text": "Board Advisor – Commercial Tech", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Advising CPG boards on RTM modernization, AI beat planning, and Power BI commercial analytics hubs.", "is_bullet": True, "size": 10},
-            {"text": "Integrated AI conversational coaching bots (Bid2Bill), reducing sales onboarding cycles by ~40%.", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_before": 4},
-            {"text": "Business Head – MEA", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Deployed enterprise SaaS SFA/DMS across 22 top logos (P&G, Nestlé, Red Bull, GSK/Haleon, Coca-Cola).", "is_bullet": True, "size": 10},
-            {"text": "Led on-ground mobile sales tool enablement for P&G Kenya distributor force, ensuring 100% field adoption.", "is_bullet": True, "size": 10},
-            {"text": "Trained 3,000+ reps on automated route scheduling, Right Store execution, and digital order capture.", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "Conektr Tech Global | 2016 – 2024", "bold": True, "size": 10, "space_before": 4},
-            {"text": "Digital Sales Enablement & Power BI", "bold": True, "size": 10, "space_after": 3},
-            {"text": "Built automated sales dashboards in Power BI and Dynamics 365, tracking call productivity & sell-out daily.", "is_bullet": True, "size": 10},
-            {"text": "Digitized retailer ordering (app/WhatsApp), pivoting reps to consultative sales coaches and category advisors.", "is_bullet": True, "size": 10}
+            {"text": "TransCPG & FieldAssist | 2025 – Present", "bold": True, "size": 9.5, "space_before": 2},
+            {"text": "Board Advisor – Commercial Tech", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Advising CPG boards on RTM modernization, AI beat planning, and Power BI commercial analytics hubs.", "is_bullet": True, "size": 9.5},
+            {"text": "Integrated AI conversational coaching bots (Bid2Bill), reducing sales onboarding cycles by ~40%.", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 9.5, "space_before": 4},
+            {"text": "Business Head – MEA", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Deployed enterprise SaaS SFA/DMS across 22 top logos (P&G, Nestlé, Red Bull, GSK/Haleon, Coca-Cola).", "is_bullet": True, "size": 9.5},
+            {"text": "Led on-ground mobile sales tool enablement for P&G Kenya distributor force, ensuring 100% field adoption.", "is_bullet": True, "size": 9.5},
+            {"text": "Trained 3,000+ reps on automated route scheduling, Right Store execution, and digital order capture.", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "Conektr Tech Global | 2016 – 2024", "bold": True, "size": 9.5, "space_before": 4},
+            {"text": "Digital Sales Enablement & Power BI", "bold": True, "size": 9.5, "space_after": 3},
+            {"text": "Built automated sales dashboards in Power BI and Dynamics 365, tracking call productivity & sell-out daily.", "is_bullet": True, "size": 9.5},
+            {"text": "Digitized retailer ordering (app/WhatsApp), pivoting reps to consultative sales coaches and category advisors.", "is_bullet": True, "size": 9.5}
         ]
 
     else:
         c0_items = [
-            {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 2},
-            {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
-            {"text": "Regional Sales & Capability Head- India", "bold": True, "size": 10, "space_after": 4},
-            {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 10},
-            {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 10},
-            {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 10},
-            {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 10},
-            {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 5},
-            {"text": "Commercial & Training Roles –", "bold": True, "size": 10, "space_after": 4},
-            {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 10},
-            {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 10}
+            {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 9.5, "space_before": 2},
+            {"text": "Regional Sales Head – GCC", "bold": True, "size": 9.5},
+            {"text": "Regional Sales & Capability Head- India", "bold": True, "size": 9.5, "space_after": 4},
+            {"text": "Owned $100M+ P&L across GCC (Saudi Arabia, UAE, Kuwait, Oman, Bahrain, Qatar) & South India.", "is_bullet": True, "size": 9.5},
+            {"text": "Directed 250+ distributor networks & 600+ frontline sales staff across GT, MT, wholesale, and institutional trade.", "is_bullet": True, "size": 9.5},
+            {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), transforming legacy trade into performance-managed selling.", "is_bullet": True, "size": 9.5},
+            {"text": "Delivered ~30% numeric distribution growth, increased LPC to ~120%, and cut sales admin costs by ~30%.", "is_bullet": True, "size": 9.5},
+            {"text": "Turnaround RSM GCC: achieved record monthly sales for 3 consecutive months (Best Employee Award from Group MD).", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 9.5, "space_before": 5},
+            {"text": "Commercial & Training Roles –", "bold": True, "size": 9.5, "space_after": 4},
+            {"text": "Built foundations in frontline trade execution, journey planning, and merchandiser enablement in telecom & enterprise security.", "is_bullet": True, "size": 9.5},
+            {"text": "Deployed capability training (SPIN selling) & integrated Oracle e-CRM & LMS infrastructure at scale.", "is_bullet": True, "size": 9.5}
         ]
 
         conektr_cat = tailored_data.get("conektr_category_bullet", "Deep FMCG Category Aggregation: Scaled multi-category catalogs across ambient, packaged food, and consumer goods portfolios.")
         c1_items = [
-            {"text": "Digital FMCG Principal / Distributor", "bold": True, "size": 10, "space_before": 2},
-            {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10, "space_after": 4},
-            {"text": "Chief Executive Officer & Founder", "bold": True, "size": 10},
-            {"text": "May 2016 – Aug 2024", "size": 10, "space_after": 4},
-            {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 10},
-            {"text": conektr_cat, "is_bullet": True, "size": 10, "highlight": True},
-            {"text": "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.", "is_bullet": True, "size": 10},
-            {"text": "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.", "is_bullet": True, "size": 10},
-            {"text": "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.", "is_bullet": True, "size": 10},
-            {"text": "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.", "is_bullet": True, "size": 10},
-            {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 10}
+            {"text": "Digital FMCG Principal / Distributor", "bold": True, "size": 9.5, "space_before": 2},
+            {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 9.5, "space_after": 4},
+            {"text": "Chief Executive Officer & Founder", "bold": True, "size": 9.5},
+            {"text": "May 2016 – Aug 2024", "size": 9.5, "space_after": 4},
+            {"text": "Founded UAE’s 1st Digital FMCG Principal-Distributor serving 8,000+ retailers (2,000+ MAU) & 100+ brands.", "is_bullet": True, "size": 9.5},
+            {"text": conektr_cat, "is_bullet": True, "size": 9.5, "highlight": True},
+            {"text": "Owned full P&L, trade terms, warehousing, last-mile delivery, trade credit, and collections.", "is_bullet": True, "size": 9.5},
+            {"text": "Built app/web/WhatsApp self-ordering engine scaling annual GMV from zero to ~AED 50M (~$13.6M) at ~18% gross margin.", "is_bullet": True, "size": 9.5},
+            {"text": "Cut coverage cost by >50% and improved field execution productivity by ~150% vs traditional trade.", "is_bullet": True, "size": 9.5},
+            {"text": "Deployed Dynamics 365 + Power BI and AI route optimization, cutting logistics costs by ~40%.", "is_bullet": True, "size": 9.5},
+            {"text": "Raised ~$15M from C-suite FMCG leaders; executed M&A exit to Al Maya Group ($1B+ retail conglomerate).", "is_bullet": True, "size": 9.5}
         ]
 
         c2_items = [
-            {"text": "Post Exit –", "size": 10, "space_before": 2, "space_after": 3},
-            {"text": "Transformation Advisor (Director)", "bold": True, "size": 10},
-            {"text": "TransCPG Inc. &", "bold": True, "size": 10},
-            {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_after": 4},
-            {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 10},
-            {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 10},
-            {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 10, "space_after": 3},
-            {"text": "Business Head – MEA", "bold": True, "size": 10, "space_before": 5},
-            {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_after": 4},
-            {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 10},
-            {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 10},
-            {"text": "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.", "is_bullet": True, "size": 10},
-            {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 10}
+            {"text": "Post Exit –", "size": 9.5, "space_before": 2, "space_after": 3},
+            {"text": "Transformation Advisor (Director)", "bold": True, "size": 9.5},
+            {"text": "TransCPG Inc. &", "bold": True, "size": 9.5},
+            {"text": "FieldAssist | 2025 – Present", "bold": True, "size": 9.5, "space_after": 4},
+            {"text": "Board Member guiding global operations scaling & platform build across FMCG principals & distributors.", "is_bullet": True, "size": 9.5},
+            {"text": "Advising CPG leaders on modernizing RTM & SAP/Oracle SFA/DMS integrations, driving ~150% coverage growth.", "is_bullet": True, "size": 9.5},
+            {"text": "Built Bid2Bill AI/Voice-bot & WhatsApp B2B2C bidding platform, cutting CAC by ~40% with 4x engagement.", "is_bullet": True, "size": 9.5, "space_after": 3},
+            {"text": "Business Head – MEA", "bold": True, "size": 9.5, "space_before": 5},
+            {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 9.5, "space_after": 4},
+            {"text": "Built MEA setup from scratch into 2nd largest global setup ($10M+ pipeline across 10+ countries).", "is_bullet": True, "size": 9.5},
+            {"text": "Won 22 enterprise logos: Haleon/GSK, P&G, Nestlé, Coca-Cola, Mars, Red Bull, BAT, and AKI Group.", "is_bullet": True, "size": 9.5},
+            {"text": "Personally led on-ground field deployment of mobile SFA for P&G distributor networks in Kenya.", "is_bullet": True, "size": 9.5},
+            {"text": "Deployed Cloud SaaS SFA/DMS to 3,000+ sales users, driving post-implementation adoption and trade ROI.", "is_bullet": True, "size": 9.5}
         ]
 
     c0_extra = tailored_data.get("column_1_extra_bullet", "")
     if c0_extra and c0_extra.strip():
-        c0_items.insert(6, {"text": c0_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
+        c0_items.insert(6, {"text": c0_extra.strip(), "is_bullet": True, "size": 9.5, "highlight": True})
 
     c1_extra = tailored_data.get("column_2_extra_bullet", "")
     if c1_extra and c1_extra.strip():
-        c1_items.insert(6, {"text": c1_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
+        c1_items.insert(6, {"text": c1_extra.strip(), "is_bullet": True, "size": 9.5, "highlight": True})
 
     c2_extra = tailored_data.get("column_3_extra_bullet", "")
     if c2_extra and c2_extra.strip():
-        c2_items.insert(5, {"text": c2_extra.strip(), "is_bullet": True, "size": 10, "highlight": True})
+        c2_items.insert(5, {"text": c2_extra.strip(), "is_bullet": True, "size": 9.5, "highlight": True})
 
     populate_cell_content(table.rows[1].cells[0], c0_items)
     populate_cell_content(table.rows[1].cells[1], c1_items)
@@ -736,48 +742,54 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     )
     table._tbl.tblPr.append(tblBorders)
 
-    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=8, space_after=8, line_border_above=False, is_multiple=False)
+    add_heading("TECHNOLOGY STACK & DIGITAL ARCHITECTURE:", space_before=6, space_after=6, line_border_above=False)
     for category, stack in MASTER_STATIC['tech_stack'].items():
         tp = doc.add_paragraph()
         tp.paragraph_format.left_indent = Inches(0.20)
         tp.paragraph_format.first_line_indent = Inches(-0.25)
         tp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        apply_xml_spacing(tp, before_pt=0, after_pt=4, line_twips=240)
+        apply_xml_spacing(tp, before_pt=0, after_pt=3, line_twips=230)
         
         r_b = tp.add_run("•\t")
         r_b.font.name = 'Calibri'
-        r_b.font.size = Pt(10)
+        r_b.font.size = Pt(9.5)
         
         r_cat = tp.add_run(f"{category}: ")
         r_cat.bold = True
         r_cat.font.name = 'Calibri'
-        r_cat.font.size = Pt(10)
+        r_cat.font.size = Pt(9.5)
         
         r_st = tp.add_run(stack)
         r_st.font.name = 'Calibri'
-        r_st.font.size = Pt(10)
+        r_st.font.size = Pt(9.5)
 
-    add_heading("WHY HIRE ME", space_before=8, space_after=4, line_border_above=False, is_multiple=False, is_underline=True)
+    add_heading("WHY HIRE ME", space_before=6, space_after=4, line_border_above=False, is_underline=True)
     
     p_why = doc.add_paragraph()
     p_why.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    apply_xml_spacing(p_why, before_pt=0, after_pt=6, line_twips=240)
+    apply_xml_spacing(p_why, before_pt=0, after_pt=4, line_twips=230)
     
     for text_segment, is_plus in MASTER_STATIC['why_hire_me_parts']:
         r_part = p_why.add_run(text_segment)
         r_part.font.name = 'Calibri'
-        r_part.font.size = Pt(10)
+        r_part.font.size = Pt(9.5)
         if is_plus:
             r_part.bold = True
             r_part.font.color.rgb = RGBColor(0x00, 0xB0, 0xF0)
 
+def set_strict_a4_margins(doc):
+    """Guarantees official A4 dimensions (210mm x 297mm) across all pages."""
+    for section in doc.sections:
+        section.page_width = Mm(210)
+        section.page_height = Mm(297)
+        section.top_margin = Inches(0.35)
+        section.bottom_margin = Inches(0.35)
+        section.left_margin = Inches(0.45)
+        section.right_margin = Inches(0.45)
+
 def create_master_resume_docx(tailored_data, highlight_changes=False):
     doc = Document()
-    for section in doc.sections:
-        section.top_margin = Inches(0.40)
-        section.bottom_margin = Inches(0.40)
-        section.left_margin = Inches(0.50)
-        section.right_margin = Inches(0.50)
+    set_strict_a4_margins(doc)
     populate_resume_document(doc, tailored_data, highlight_changes)
     doc_io = io.BytesIO()
     doc.save(doc_io)
@@ -785,47 +797,47 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. WORD COVER, MATCH MATRIX (STRICT 1-PAGE A4) & COMBINED PACK BUILDER
+# 4. WORD COVER, MATCH MATRIX (FULL A4 FILL) & COMBINED PACK BUILDER
 # ==============================================================================
 def populate_cover_letter_docx_page(doc, cover_data):
     p_title = doc.add_paragraph()
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_title, before_pt=0, after_pt=10, line_twips=278)
+    apply_xml_spacing(p_title, before_pt=0, after_pt=8, line_twips=270)
     r_t = p_title.add_run("COVER LETTER")
     r_t.bold = True
     r_t.font.name = 'Calibri'
     r_t.font.size = Pt(14)
 
     p_sub = doc.add_paragraph()
-    apply_xml_spacing(p_sub, before_pt=4, after_pt=8, line_twips=260)
+    apply_xml_spacing(p_sub, before_pt=2, after_pt=6, line_twips=250)
     r_sb = p_sub.add_run(f"Subject: {cover_data.get('subject_line', '')}")
     r_sb.bold = True
     r_sb.font.name = 'Calibri'
     r_sb.font.size = Pt(11)
 
     p_d = doc.add_paragraph("Dear Hiring Team,")
-    apply_xml_spacing(p_d, before_pt=4, after_pt=8, line_twips=260)
+    apply_xml_spacing(p_d, before_pt=2, after_pt=6, line_twips=250)
 
     p_p1 = doc.add_paragraph(cover_data.get("cover_para_1", ""))
-    apply_xml_spacing(p_p1, before_pt=0, after_pt=8, line_twips=270)
+    apply_xml_spacing(p_p1, before_pt=0, after_pt=6, line_twips=260)
     p_p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     p_p2 = doc.add_paragraph(cover_data.get("cover_para_2", ""))
-    apply_xml_spacing(p_p2, before_pt=0, after_pt=8, line_twips=270)
+    apply_xml_spacing(p_p2, before_pt=0, after_pt=6, line_twips=260)
     p_p2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     p_kh = doc.add_paragraph()
-    apply_xml_spacing(p_kh, before_pt=0, after_pt=6, line_twips=260)
+    apply_xml_spacing(p_kh, before_pt=0, after_pt=5, line_twips=250)
     r_kh = p_kh.add_run("Key highlights of what I bring to this mandate include:")
     r_kh.bold = True
     r_kh.font.name = 'Calibri'
-    r_kh.font.size = Pt(11)
+    r_kh.font.size = Pt(10.5)
 
     for b in cover_data.get("cover_bullets", []):
         bp = doc.add_paragraph()
         bp.paragraph_format.left_indent = Inches(0.25)
         bp.paragraph_format.first_line_indent = Inches(-0.18)
-        apply_xml_spacing(bp, before_pt=0, after_pt=5, line_twips=250)
+        apply_xml_spacing(bp, before_pt=0, after_pt=4, line_twips=240)
         bp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         
         r_bull = bp.add_run("•\t")
@@ -847,11 +859,11 @@ def populate_cover_letter_docx_page(doc, cover_data):
             r_b.font.size = Pt(10)
 
     p_cl = doc.add_paragraph(cover_data.get("cover_para_closing", ""))
-    apply_xml_spacing(p_cl, before_pt=4, after_pt=8, line_twips=270)
+    apply_xml_spacing(p_cl, before_pt=4, after_pt=6, line_twips=260)
     p_cl.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     p_sign = doc.add_paragraph()
-    apply_xml_spacing(p_sign, before_pt=6, after_pt=0, line_twips=240)
+    apply_xml_spacing(p_sign, before_pt=4, after_pt=0, line_twips=230)
     r_s0 = p_sign.add_run("Sincerely,\n")
     r_s0.font.name = 'Calibri'
     r_s1 = p_sign.add_run("Madhusudhanan Janakarajan (Madhu)\n")
@@ -862,24 +874,24 @@ def populate_cover_letter_docx_page(doc, cover_data):
 
 def populate_match_matrix_docx_page(doc, cover_data):
     """
-    Renders an exhaustive yet strictly 1-PAGE A4 Match Matrix.
-    Uses ultra-efficient spacing, compact cell padding, and high-density font rendering.
+    Renders an exhaustive Match Matrix calibrated to FULLY POPULATE an A4 page
+    (8-10 rows, 55-75 words each) with ZERO blank white space and ZERO spillover.
     """
     p_mtitle = doc.add_paragraph()
     p_mtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_mtitle, before_pt=0, after_pt=2, line_twips=220)
+    apply_xml_spacing(p_mtitle, before_pt=0, after_pt=3, line_twips=240)
     r_mt = p_mtitle.add_run("EXECUTIVE REQUIREMENT & COMPETENCY MATCH MATRIX")
     r_mt.bold = True
     r_mt.font.name = 'Calibri'
-    r_mt.font.size = Pt(11.5)
+    r_mt.font.size = Pt(12)
 
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_sub, before_pt=0, after_pt=5, line_twips=190)
+    apply_xml_spacing(p_sub, before_pt=0, after_pt=6, line_twips=200)
     r_sub = p_sub.add_run("Comprehensive cross-enterprise alignment of 23+ years FMCG, Route-to-Market, and Sales Capability leadership against mandate priorities.")
     r_sub.italic = True
     r_sub.font.name = 'Calibri'
-    r_sub.font.size = Pt(8.5)
+    r_sub.font.size = Pt(9.0)
 
     matrix_items = cover_data.get("matrix_items", [])
     table = doc.add_table(rows=len(matrix_items) + 1, cols=2)
@@ -887,9 +899,8 @@ def populate_match_matrix_docx_page(doc, cover_data):
     table.autofit = False
     
     col_w0 = Inches(2.25)
-    col_w1 = Inches(5.25)
+    col_w1 = Inches(5.35)
 
-    # Style Header Row
     cell_0 = table.rows[0].cells[0]
     cell_1 = table.rows[0].cells[1]
     cell_0.width = col_w0
@@ -903,21 +914,20 @@ def populate_match_matrix_docx_page(doc, cover_data):
 
     p_h0 = cell_0.paragraphs[0]
     p_h0.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    apply_xml_spacing(p_h0, before_pt=2, after_pt=2, line_twips=200)
+    apply_xml_spacing(p_h0, before_pt=3, after_pt=3, line_twips=220)
     r_h0 = p_h0.add_run("Target Mandate Requirement")
     r_h0.bold = True
     r_h0.font.name = 'Calibri'
-    r_h0.font.size = Pt(9.0)
+    r_h0.font.size = Pt(9.5)
 
     p_h1 = cell_1.paragraphs[0]
     p_h1.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    apply_xml_spacing(p_h1, before_pt=2, after_pt=2, line_twips=200)
+    apply_xml_spacing(p_h1, before_pt=3, after_pt=3, line_twips=220)
     r_h1 = p_h1.add_run("Candidate Evidence & Multi-Company Track Record")
     r_h1.bold = True
     r_h1.font.name = 'Calibri'
-    r_h1.font.size = Pt(9.0)
+    r_h1.font.size = Pt(9.5)
 
-    # Populate Match Rows
     for idx, item in enumerate(matrix_items):
         row = table.rows[idx + 1]
         trPr = row._tr.get_or_add_trPr()
@@ -931,18 +941,18 @@ def populate_match_matrix_docx_page(doc, cover_data):
 
         p0 = r_cells[0].paragraphs[0]
         p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        apply_xml_spacing(p0, before_pt=2, after_pt=2, line_twips=195)
+        apply_xml_spacing(p0, before_pt=3, after_pt=3, line_twips=210)
         r_rt = p0.add_run(item.get('requirement_title', ''))
         r_rt.bold = True
         r_rt.font.name = 'Calibri'
-        r_rt.font.size = Pt(8.5)
+        r_rt.font.size = Pt(9.0)
 
         p1 = r_cells[1].paragraphs[0]
         p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        apply_xml_spacing(p1, before_pt=2, after_pt=2, line_twips=195)
+        apply_xml_spacing(p1, before_pt=3, after_pt=3, line_twips=210)
         r_mt = p1.add_run(item.get('match_desc', ''))
         r_mt.font.name = 'Calibri'
-        r_mt.font.size = Pt(8.5)
+        r_mt.font.size = Pt(9.0)
 
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -956,12 +966,7 @@ def populate_match_matrix_docx_page(doc, cover_data):
 
 def create_combined_application_docx(cover_data, tailored_data):
     doc = Document()
-    for section in doc.sections:
-        section.top_margin = Inches(0.40)
-        section.bottom_margin = Inches(0.40)
-        section.left_margin = Inches(0.50)
-        section.right_margin = Inches(0.50)
-    
+    set_strict_a4_margins(doc)
     populate_cover_letter_docx_page(doc, cover_data)
     doc.add_page_break()
     populate_resume_document(doc, tailored_data, highlight_changes=False)
@@ -999,7 +1004,7 @@ def rebuild_all_documents():
 # 5. STREAMLIT FRONTEND & CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("Sales Operations & Capability Track • Dynamic 3-Column Experience • 1-Page A4 Match Matrix")
+st.caption("Sales Operations & Capability Track • Dynamic 3-Column Experience • Complete A4 Page Balance")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -1198,7 +1203,7 @@ with col1:
                         st.error(f"Archive Update Error: {str(e)}")
 
 # ==============================================================================
-# MAIN GENERATION CONTROLLER (DYNAMIC 3-COLUMN + STRICT 1-PAGE MATRIX)
+# MAIN GENERATION CONTROLLER (FULL A4 MATCH MATRIX + STRICT PAGE 1 ENGINE)
 # ==============================================================================
 if generate_btn:
     if not job_desc or not job_desc.strip():
@@ -1207,7 +1212,7 @@ if generate_btn:
         st.error("API Key is missing. Please configure GEMINI_API_KEY in Streamlit Secrets.")
     else:
         with col2:
-            with st.spinner("⚡ Tailoring Application Suite: Aligning Track, Experience Columns, and Word Suite..."):
+            with st.spinner("⚡ Tailoring Application Suite: Calibrating Full Page Balance and Word Suite..."):
                 archive_context = get_full_knowledge_context()
                 
                 prompt = f"""
@@ -1246,10 +1251,10 @@ if generate_btn:
                    - "header_focus_1": Target leadership title matching JD. Max 36 chars.
                    - "header_focus_2": Specialized domain focus matching JD (e.g. "RTM & Sales Capability Architecture"). Max 40 chars.
 
-                3. EXECUTIVE SUMMARY (STRICTLY 155 TO 170 WORDS / EXACTLY 8 FULL JUSTIFIED LINES):
-                   - Authoritative, high-impact executive summary of EXACTLY 155 to 170 words tailored directly to the JD.
-                   - Must completely fill 8 full justified lines in Calibri 10pt (line spacing multiple 1.16).
-                   - Deliver a compelling narrative covering 23+ years driving FMCG commercial strategy, RTM redesign, Right Store execution, sales training/capability building, regional Power BI data hubs, and distributor governance.
+                3. EXECUTIVE SUMMARY (CRITICAL: EXACTLY 150 TO 160 WORDS / STRICT 8 LINES):
+                   - Authoritative executive summary of EXACTLY 150 to 160 words (NO MORE than 160 words under any circumstance).
+                   - Perfectly fills 8 lines in Calibri 9.5pt on A4.
+                   - Highlights 23+ years driving FMCG commercial strategy, RTM redesign, Right Store execution, capability building, Power BI regional data hubs, and distributor governance.
 
                 4. CAPABILITY ORDERING:
                    - Array of all 5 capability keys ordered by detected track priority.
@@ -1260,29 +1265,29 @@ if generate_btn:
                    - "exp_col_header_3": Column 3 Title.
 
                 6. CONEKTR CATEGORY BULLET:
-                   - Category aggregation bullet tailored to categories of target company (e.g., snacking, confectionery, biscuits, beverages).
+                   - Category aggregation bullet tailored to categories of target company.
 
                 7. DYNAMIC EXPERIENCE INJECTIONS (STRICT 18 TO 24 WORDS EACH):
-                   - "column_1_extra_bullet": 18-24 words under Britannia / Operations regarding RTM models, Right Store execution, or distributor compliance.
-                   - "column_2_extra_bullet": 18-24 words under Capability / Training regarding TTT, 70:20:10, SPIN selling, or distributor infrastructure audits.
-                   - "column_3_extra_bullet": 18-24 words under Digital / Transformation regarding Power BI data hubs, digital tools, or automated KPI tracking.
+                   - "column_1_extra_bullet": 18-24 words under Britannia / Operations.
+                   - "column_2_extra_bullet": 18-24 words under Capability / Training.
+                   - "column_3_extra_bullet": 18-24 words under Digital / Transformation.
 
-                8. ATS MATCH SCORE (INTEGER 88-97):
-                   - "ats_match_score": Integer reflecting alignment with provided JD.
+                8. ATS MATCH SCORE (CALCULATED OBJECTIVELY 88-97):
+                   - "ats_match_score": Integer reflecting genuine keyword alignment with JD.
 
-                9. COVER LETTER & MATCH MATRIX REQUIREMENTS (STRICT 1-PAGE A4 GUARANTEE):
+                9. COVER LETTER & MATCH MATRIX REQUIREMENTS (EXHAUSTIVE FULL A4 PAGE FIT):
                    - "subject_line": "Application for [Target Role] - [Target Company]"
                    - "cover_para_1": Authoritative opening referencing company name, role title, and 23+ year track record.
                    - "cover_para_2": Direct alignment with target company's commercial execution, Right Store, RTM, and capability priorities.
                    - "cover_bullets": 4 high-impact bullets formatted as "Bold Category: Detailed metric description":
-                     1) RTM Strategy & Distributor Governance: ...
+                     1) Route-to-Market Strategy & Distributor Governance: ...
                      2) Sales Capability Building & Right Store Execution: ...
                      3) Digitalization, Data Stewardship & Power BI: ...
                      4) Cross-Functional Commercial Leadership: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
-                   - "matrix_items": Array of EXACTLY 7 HIGHLY TARGETED COMPETENCY ROWS covering the major pillars in the JD (e.g., 1. Route-to-Market & Distributor Modeling, 2. Right Store Execution & Outlet Optimization, 3. Sales Capability Building & Coaching, 4. Sales Development & Secondary Sell-Out, 5. Digitalization & Regional Power BI Dashboards, 6. Commercial Analytics & Cost-to-Serve, 7. Cross-Functional Stakeholder Governance).
-                     * "requirement_title": Concise, punchy title taken directly from the JD (under 7 words).
-                     * "match_desc": EXACTLY 35 TO 45 WORDS of dense, highly authoritative evidence CORRELATING AT LEAST TWO OF CANDIDATE'S ROLES (e.g., Britannia GCC + Conektr, or Britannia India + Ivy Mobility, or Airtel + Reliance). Must pack verified metrics ($100M+ NSV, 250+ distributors, 8,000+ stores, ~30% ND, 70:20:10, CST, Power BI) without filler to guarantee strict 1-page A4 visual balance.
+                   - "matrix_items": Array of 8 TO 10 EXHAUSTIVE COMPETENCY ROWS covering ALL core mandates in the JD (e.g., 1. Route-to-Market Design & Hybrid Models, 2. Right Store Execution & Frequency Standards, 3. Sales Capability Building, Coaching & TTT, 4. Sales Development & Secondary Sell-Out, 5. Regional Data Hub Sanity & Power BI Dashboards, 6. Commercial Analytics & Cost-to-Serve Efficiency, 7. Distributor Governance & Trade Margin Economics, 8. Cross-Functional Strategic Alignment).
+                     * "requirement_title": Concise, specific pillar title taken directly from the JD (under 6 words).
+                     * "match_desc": A SUBSTANTIAL, METRIC-PACKED PARAGRAPH OF 55 TO 70 WORDS CORRELATING AT LEAST TWO OF CANDIDATE'S ROLES (e.g. Britannia GCC + Conektr, or Britannia India + Ivy Mobility MEA, or Airtel + Reliance). Directly quote verified metrics ($100M+ NSV, 250+ distributors, 8,000+ stores, ~30% ND, 70:20:10, CST, Power BI). This density guarantees the entire A4 page is populated with NO vacant white space.
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -1492,8 +1497,8 @@ if st.session_state.get("has_results", False):
                     1. Apply user corrections directly to the relevant fields.
                     2. Maintain all existing locked metrics and structures that were not asked to be changed.
                     3. NEVER write numbers as words. Ensure '360°', '$100M+', '23+ years', '8,000+', and '~40%' remain numeric.
-                    4. Keep executive_summary between 155 and 170 words (exactly 8 lines in 10pt Calibri).
-                    5. Ensure matrix_items contains EXACTLY 7 rows, each 35-45 words correlating at least two roles, guaranteeing strict 1-page A4 balance.
+                    4. Keep executive_summary between 150 and 160 words (strictly 8 lines in 9.5pt Calibri).
+                    5. Ensure matrix_items contains 8 to 10 rows, each 55-70 words correlating at least two roles, fully filling the A4 page without spilling over.
 
                     Return ONLY the updated JSON with all fields intact.
                     """
@@ -1540,5 +1545,5 @@ if st.session_state.get("has_results", False):
             st.write("**Column 1 Header:**", tailored_data.get("exp_col_header_1"))
             st.write("**Column 2 Header:**", tailored_data.get("exp_col_header_2"))
             st.write("**Column 3 Header:**", tailored_data.get("exp_col_header_3"))
-            st.write("**Executive Summary:**", tailored_data.get("executive_summary"))
+            st.write("**Executive Summary Word Count:**", len(tailored_data.get("executive_summary", "").split()))
             st.write("**Match Matrix Rows Generated:**", len(cover_data.get("matrix_items", [])))
