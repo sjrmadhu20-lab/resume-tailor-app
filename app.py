@@ -439,10 +439,11 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_c3_val.font.name = 'Calibri'
     r_c3_val.font.size = Pt(10)
 
-    add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=8, line_border_above=False, is_multiple=True)
+    add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=6, line_border_above=False, is_multiple=True)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    apply_xml_spacing(sp, before_pt=0, after_pt=6, line_twips=278)
+    # 265 line twips (~1.12 multiple) guarantees strict 7 to 9 lines for 145-175 words
+    apply_xml_spacing(sp, before_pt=0, after_pt=6, line_twips=265)
     r_sum = sp.add_run(tailored_data.get("executive_summary", ""))
     r_sum.font.name = 'Calibri'
     r_sum.font.size = Pt(10)
@@ -785,7 +786,7 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
     return doc_io.getvalue()
 
 # ==============================================================================
-# 4. WORD COVER, MATCH MATRIX (STRICT 1-PAGE A4) & COMBINED PACK BUILDER
+# 4. WORD COVER, MATCH MATRIX (10+ ROWS A4 CALIBRATED) & COMBINED PACK BUILDER
 # ==============================================================================
 def populate_cover_letter_docx_page(doc, cover_data):
     p_title = doc.add_paragraph()
@@ -862,32 +863,32 @@ def populate_cover_letter_docx_page(doc, cover_data):
 
 def populate_match_matrix_docx_page(doc, cover_data):
     """
-    Renders an exhaustive yet strictly 1-PAGE A4 Match Matrix.
-    Uses ultra-efficient spacing, compact cell padding, and high-density font rendering.
+    Renders an exhaustive, high-density 1-PAGE A4 Match Matrix with at least 10 rows.
+    Calibrated with ultra-compact cell padding and 8.0pt font to eradicate excess white space.
     """
     p_mtitle = doc.add_paragraph()
     p_mtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_mtitle, before_pt=0, after_pt=2, line_twips=220)
+    apply_xml_spacing(p_mtitle, before_pt=0, after_pt=1, line_twips=200)
     r_mt = p_mtitle.add_run("EXECUTIVE REQUIREMENT & COMPETENCY MATCH MATRIX")
     r_mt.bold = True
     r_mt.font.name = 'Calibri'
-    r_mt.font.size = Pt(11.5)
+    r_mt.font.size = Pt(11)
 
     p_sub = doc.add_paragraph()
     p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    apply_xml_spacing(p_sub, before_pt=0, after_pt=5, line_twips=190)
-    r_sub = p_sub.add_run("Comprehensive cross-enterprise alignment of 23+ years FMCG, Route-to-Market, and Sales Capability leadership against mandate priorities.")
+    apply_xml_spacing(p_sub, before_pt=0, after_pt=4, line_twips=170)
+    r_sub = p_sub.add_run("Granular cross-enterprise alignment of 23+ years FMCG, Route-to-Market, and Sales Capability leadership against mandate priorities.")
     r_sub.italic = True
     r_sub.font.name = 'Calibri'
-    r_sub.font.size = Pt(8.5)
+    r_sub.font.size = Pt(8.0)
 
     matrix_items = cover_data.get("matrix_items", [])
     table = doc.add_table(rows=len(matrix_items) + 1, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
     
-    col_w0 = Inches(2.25)
-    col_w1 = Inches(5.25)
+    col_w0 = Inches(2.20)
+    col_w1 = Inches(5.30)
 
     # Style Header Row
     cell_0 = table.rows[0].cells[0]
@@ -903,21 +904,21 @@ def populate_match_matrix_docx_page(doc, cover_data):
 
     p_h0 = cell_0.paragraphs[0]
     p_h0.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    apply_xml_spacing(p_h0, before_pt=2, after_pt=2, line_twips=200)
+    apply_xml_spacing(p_h0, before_pt=1.5, after_pt=1.5, line_twips=180)
     r_h0 = p_h0.add_run("Target Mandate Requirement")
     r_h0.bold = True
     r_h0.font.name = 'Calibri'
-    r_h0.font.size = Pt(9.0)
+    r_h0.font.size = Pt(8.5)
 
     p_h1 = cell_1.paragraphs[0]
     p_h1.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    apply_xml_spacing(p_h1, before_pt=2, after_pt=2, line_twips=200)
+    apply_xml_spacing(p_h1, before_pt=1.5, after_pt=1.5, line_twips=180)
     r_h1 = p_h1.add_run("Candidate Evidence & Multi-Company Track Record")
     r_h1.bold = True
     r_h1.font.name = 'Calibri'
-    r_h1.font.size = Pt(9.0)
+    r_h1.font.size = Pt(8.5)
 
-    # Populate Match Rows
+    # Populate 10+ Match Rows
     for idx, item in enumerate(matrix_items):
         row = table.rows[idx + 1]
         trPr = row._tr.get_or_add_trPr()
@@ -931,25 +932,25 @@ def populate_match_matrix_docx_page(doc, cover_data):
 
         p0 = r_cells[0].paragraphs[0]
         p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        apply_xml_spacing(p0, before_pt=2, after_pt=2, line_twips=195)
+        apply_xml_spacing(p0, before_pt=1.5, after_pt=1.5, line_twips=175)
         r_rt = p0.add_run(item.get('requirement_title', ''))
         r_rt.bold = True
         r_rt.font.name = 'Calibri'
-        r_rt.font.size = Pt(8.5)
+        r_rt.font.size = Pt(8.0)
 
         p1 = r_cells[1].paragraphs[0]
         p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        apply_xml_spacing(p1, before_pt=2, after_pt=2, line_twips=195)
+        apply_xml_spacing(p1, before_pt=1.5, after_pt=1.5, line_twips=175)
         r_mt = p1.add_run(item.get('match_desc', ''))
         r_mt.font.name = 'Calibri'
-        r_mt.font.size = Pt(8.5)
+        r_mt.font.size = Pt(8.0)
 
     tblBorders = parse_xml(
         r'<w:tblBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
         r'<w:top w:val="single" w:sz="6" w:space="0" w:color="004B87"/>'
         r'<w:bottom w:val="single" w:sz="6" w:space="0" w:color="004B87"/>'
-        r'<w:insideH w:val="single" w:sz="4" w:space="0" w:color="E0E0E0"/>'
-        r'<w:insideV w:val="single" w:sz="4" w:space="0" w:color="D3D3D3"/>'
+        r'<w:insideH w:val="single" w:sz="3" w:space="0" w:color="E0E0E0"/>'
+        r'<w:insideV w:val="single" w:sz="3" w:space="0" w:color="D3D3D3"/>'
         r'</w:tblBorders>'
     )
     table._tbl.tblPr.append(tblBorders)
@@ -957,8 +958,8 @@ def populate_match_matrix_docx_page(doc, cover_data):
 def create_combined_application_docx(cover_data, tailored_data):
     doc = Document()
     for section in doc.sections:
-        section.top_margin = Inches(0.40)
-        section.bottom_margin = Inches(0.40)
+        section.top_margin = Inches(0.35)
+        section.bottom_margin = Inches(0.35)
         section.left_margin = Inches(0.50)
         section.right_margin = Inches(0.50)
     
@@ -999,7 +1000,7 @@ def rebuild_all_documents():
 # 5. STREAMLIT FRONTEND & CONTROLLER
 # ==============================================================================
 st.title("🎯 Executive ATS Resume & Application Engine")
-st.caption("Sales Operations & Capability Track • Dynamic 3-Column Experience • 1-Page A4 Match Matrix")
+st.caption("Sales Operations & Capability Track • Dynamic 3-Column Experience • 10-Row A4 Match Matrix")
 
 with st.sidebar:
     st.header("⚡ System Status")
@@ -1198,7 +1199,7 @@ with col1:
                         st.error(f"Archive Update Error: {str(e)}")
 
 # ==============================================================================
-# MAIN GENERATION CONTROLLER (DYNAMIC 3-COLUMN + STRICT 1-PAGE MATRIX)
+# MAIN GENERATION CONTROLLER (10+ ROWS MATRIX & STRICT 7-9 LINE SUMMARY)
 # ==============================================================================
 if generate_btn:
     if not job_desc or not job_desc.strip():
@@ -1207,7 +1208,7 @@ if generate_btn:
         st.error("API Key is missing. Please configure GEMINI_API_KEY in Streamlit Secrets.")
     else:
         with col2:
-            with st.spinner("⚡ Tailoring Application Suite: Aligning Track, Experience Columns, and Word Suite..."):
+            with st.spinner("⚡ Tailoring Application Suite: Aligning Track, Experience Columns, and 10-Row Matrix..."):
                 archive_context = get_full_knowledge_context()
                 
                 prompt = f"""
@@ -1246,9 +1247,9 @@ if generate_btn:
                    - "header_focus_1": Target leadership title matching JD. Max 36 chars.
                    - "header_focus_2": Specialized domain focus matching JD (e.g. "RTM & Sales Capability Architecture"). Max 40 chars.
 
-                3. EXECUTIVE SUMMARY (STRICTLY 155 TO 170 WORDS / EXACTLY 8 FULL JUSTIFIED LINES):
-                   - Authoritative, high-impact executive summary of EXACTLY 155 to 170 words tailored directly to the JD.
-                   - Must completely fill 8 full justified lines in Calibri 10pt (line spacing multiple 1.16).
+                3. EXECUTIVE SUMMARY (STRICTLY 7 TO 9 LINES / 145 TO 175 WORDS):
+                   - Authoritative, high-impact executive summary strictly between 145 and 175 words tailored directly to the JD.
+                   - MUST strictly format to MINIMUM 7 LINES and MAXIMUM 9 LINES in 10pt justified Calibri (no fewer than 7 lines, no more than 9 lines).
                    - Deliver a compelling narrative covering 23+ years driving FMCG commercial strategy, RTM redesign, Right Store execution, sales training/capability building, regional Power BI data hubs, and distributor governance.
 
                 4. CAPABILITY ORDERING:
@@ -1270,7 +1271,7 @@ if generate_btn:
                 8. ATS MATCH SCORE (INTEGER 88-97):
                    - "ats_match_score": Integer reflecting alignment with provided JD.
 
-                9. COVER LETTER & MATCH MATRIX REQUIREMENTS (STRICT 1-PAGE A4 GUARANTEE):
+                9. COVER LETTER & MATCH MATRIX REQUIREMENTS (10 TO 11 ROWS FILLING A4 PAGE):
                    - "subject_line": "Application for [Target Role] - [Target Company]"
                    - "cover_para_1": Authoritative opening referencing company name, role title, and 23+ year track record.
                    - "cover_para_2": Direct alignment with target company's commercial execution, Right Store, RTM, and capability priorities.
@@ -1280,9 +1281,20 @@ if generate_btn:
                      3) Digitalization, Data Stewardship & Power BI: ...
                      4) Cross-Functional Commercial Leadership: ...
                    - "cover_para_closing": Forward-looking closing paragraph.
-                   - "matrix_items": Array of EXACTLY 7 HIGHLY TARGETED COMPETENCY ROWS covering the major pillars in the JD (e.g., 1. Route-to-Market & Distributor Modeling, 2. Right Store Execution & Outlet Optimization, 3. Sales Capability Building & Coaching, 4. Sales Development & Secondary Sell-Out, 5. Digitalization & Regional Power BI Dashboards, 6. Commercial Analytics & Cost-to-Serve, 7. Cross-Functional Stakeholder Governance).
-                     * "requirement_title": Concise, punchy title taken directly from the JD (under 7 words).
-                     * "match_desc": EXACTLY 35 TO 45 WORDS of dense, highly authoritative evidence CORRELATING AT LEAST TWO OF CANDIDATE'S ROLES (e.g., Britannia GCC + Conektr, or Britannia India + Ivy Mobility, or Airtel + Reliance). Must pack verified metrics ($100M+ NSV, 250+ distributors, 8,000+ stores, ~30% ND, 70:20:10, CST, Power BI) without filler to guarantee strict 1-page A4 visual balance.
+                   - "matrix_items": Array of EXACTLY 10 (or 11) HIGHLY TARGETED COMPETENCY ROWS to fill out the A4 page without empty white-space.
+                     * Pillars to cover from JD:
+                       1. Route-to-Market (RTM) Design & Distributor Governance
+                       2. Right Store Execution, Outlet Segmentation & Golden Store Standards
+                       3. Frontline Sales Capability, TTT & 70:20:10 Framework
+                       4. Secondary Sell-Out, Distribution Expansion & Numeric Coverage
+                       5. SFA / DMS Enterprise Deployments & Digital Adoption
+                       6. Regional Data Stewardship & Power BI Commercial Dashboards
+                       7. Commercial Analytics, Trade Spend ROI & Cost-to-Serve Optimization
+                       8. Distributor Contract Economics, Margin Structures & Working Capital
+                       9. Cross-Functional Alignment (Supply Chain, Trade Marketing, Sales Ops)
+                       10. Change Management, Performance Scorecards & Field Enablement
+                     * "requirement_title": Direct, punchy requirement name from the JD (under 7 words).
+                     * "match_desc": EXACTLY 28 TO 36 WORDS of dense, highly authoritative proof points CORRELATING AT LEAST TWO OF CANDIDATE'S ROLES (e.g., Britannia GCC + Conektr, or Britannia India + Ivy Mobility, or Airtel + Reliance). Must pack verified metrics ($100M+ NSV, 250+ distributors, 8,000+ stores, ~30% ND, 70:20:10, CST, Power BI) without fluff to ensure clean 1-page A4 balance across all 10 rows.
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -1492,8 +1504,8 @@ if st.session_state.get("has_results", False):
                     1. Apply user corrections directly to the relevant fields.
                     2. Maintain all existing locked metrics and structures that were not asked to be changed.
                     3. NEVER write numbers as words. Ensure '360°', '$100M+', '23+ years', '8,000+', and '~40%' remain numeric.
-                    4. Keep executive_summary between 155 and 170 words (exactly 8 lines in 10pt Calibri).
-                    5. Ensure matrix_items contains EXACTLY 7 rows, each 35-45 words correlating at least two roles, guaranteeing strict 1-page A4 balance.
+                    4. Keep executive_summary strictly between 145 and 175 words to guarantee MIN 7 to MAX 9 lines in Calibri 10pt (no fewer, no more).
+                    5. Ensure matrix_items contains AT LEAST 10 rows (10 to 11 rows), each 28-36 words correlating at least two roles with concrete metrics, perfectly filling the single A4 page.
 
                     Return ONLY the updated JSON with all fields intact.
                     """
