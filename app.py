@@ -88,6 +88,12 @@ BASE_CAPABILITIES = {
         " Converted mom-and-pop grocers into micro-fulfillment dark stores, optimizing retail media,"
         " digital shelf visibility, quick-commerce fulfillment, and omnichannel payment rails."
     ),
+    "it_platform": (
+        "Enterprise Architecture, Platform Engineering & Digital Product: Full SDLC architect"
+        " as Founder-CTO of Conektr. Engineered high-load cloud B2B/B2C marketplace applications,"
+        " automated ERP-DMS API integrations (Dynamics 365, SAP, Oracle), microservices, payment gateways,"
+        " and AI conversational voice/WhatsApp ordering bots with high uptime and institutional security."
+    ),
     "logistics_aggregation": (
         "Logistics Aggregation & Cost-to-Serve Optimization: Pioneered shared-logistics distribution"
         " aggregation at Conektr, solving fragmented drop sizes and high freight costs across UAE trade."
@@ -191,24 +197,18 @@ MASTER_STATIC = {
 
 MASTER_DEEP_EXPERIENCE = """
 CANDIDATE DEEP REPOSITORY & VERIFIED ACHIEVEMENTS:
+- Inside-Out IT Advantage (Business Operator + Platform CTO + Enterprise Solution Advisor):
+  * Three-Sided Technology Acumen:
+    1. Operational User (Britannia, Airtel): Lived everyday frontline bottlenecks as a regional business operator managing $100M+ P&Ls, 250+ distributors, and 600+ reps. Knows exactly how users interact with technology on the ground.
+    2. Platform Architect & Founder CTO (Conektr): Built the entire B2B2C digital ecosystem from architecture design to launch—spanning mobile apps, web portal, Dynamics 365 backend, automated dispatch, WhatsApp ordering, and fintech credit rails. Deployed and ran it for Conektr's own commercial operations.
+    3. Enterprise Solutions Advisor (Ivy Mobility, FieldAssist, TransCPG): Trusted advisor to multinational C-suites (P&G, Nestlé, Coca-Cola), selling and implementing complex SaaS SFA/DMS across 5,000+ users.
+
 - Route-to-Market, Logistics & Supply Aggregation:
-  * Conektr Logistics Thesis: Solved FMCG manufacturer pain points where individual suppliers deployed trucks to deliver small order sizes to general trade grocers. Conektr operated as a consolidated digital logistics aggregator, combining orders across 100+ brands onto consolidated last-mile routes, dropping coverage costs by >50% and logistics expense by ~40%.
-  * Strategic Relevance to Global Logistics (e.g., DP World): Direct domain mastery on how third-party logistics/port operators can conquer FMCG end-to-end distribution by offering shared multi-principal warehousing, middle-mile transit, and tech-enabled last-mile fulfillment.
-  * Route Economics: Managed 250+ distributor networks at Britannia, establishing drop-size thresholds, warehouse turns, credit governance, and working capital cash cycles across 6 GCC markets.
+  * Conektr Logistics Aggregator Thesis: Solved fragmented grocery supply delivery where dozens of individual principals dispatched half-empty trucks. Conektr combined orders across 100+ brands onto consolidated last-mile dispatches, cutting fleet costs by ~40% and coverage cost by >50%.
+  * Strategic Relevance to Global Logistics (e.g., DP World): Master of shared multi-principal logistics, bonded hub operations, middle-mile consolidation, and digitized last-mile fulfillment.
 
 - High-Ticket Enterprise Sales & Client Advisory:
-  * Ivy Mobility & FieldAssist Track Record: Built MEA operations from ground up, establishing deep C-level trust across GCC FMCG principals. Secured 22+ tier-1 client logos (P&G, Nestlé, Coca-Cola, Mars, GSK/Haleon, Red Bull, AKI Group).
-  * Solution Selling: Highly experienced in high-ticket enterprise contracts, selling digital platforms, logistics/trade solutions, and change management programs to C-suite buyers (CEOs, Commercial Directors, Supply Chain VPs).
-  * Industry Buy-In: Widely respected across the GCC FMCG fraternity as a credible operator, founder, and board-level transformation advisor.
-
-- B2C eCommerce, Quick Commerce & Retail Media:
-  * Omnichannel Architecture: Scaled Conektr beyond B2B into direct B2C commerce, launching the consumer app and BOSS loyalty framework. Turned mom-and-pop grocers into quick-commerce micro-fulfillment dark stores.
-  * Retail Media & Digital Shelf: Deep expertise in digital category management, product content governance, search share, A+ listings, Buy Box defense, and optimizing ROAS/TACoS across pure-play (Amazon, Noon) and on-demand delivery apps (Talabat, Deliveroo, Careem, Carrefour Online).
-  * Joint Business Planning (JBP): Led high-stakes JBP negotiations with regional modern trade, pure-play marketplaces, and aggregator platforms to unlock collaborative margin growth.
-
-- Sales Capability Building & Operations:
-  * Certified Sales Trainer (CST, DOOR India Topper, SPIN Certified).
-  * Scaled capability frameworks across Britannia, Airtel, and Reliance: TTT, 70:20:10 learning models, and automated field scorecards lifting LPC to ~120%.
+  * Ivy Mobility & FieldAssist Track Record: Built MEA operations into 2nd largest global pipeline ($10M+). Won 22+ tier-1 enterprise accounts through value-led consultative selling.
 """
 
 def load_custom_knowledge():
@@ -360,11 +360,12 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
     r_v.bold = True
     p_contact.add_run(c['visas'])
 
-    # PAGE 1: EXECUTIVE SUMMARY (STRICT 7-9 LINES)
+    # PAGE 1: EXECUTIVE SUMMARY (STRICT 8 TO 9 LINES CALIBRATED)
     add_heading("EXECUTIVE SUMMARY", space_before=0, space_after=6, line_border_above=False, is_multiple=True)
     sp = doc.add_paragraph()
     sp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    apply_xml_spacing(sp, before_pt=0, after_pt=6, line_twips=265)
+    # 275 line twips (~1.15 multiple) with 165-190 words strictly locks to 8-9 lines
+    apply_xml_spacing(sp, before_pt=0, after_pt=6, line_twips=275)
     r_sum = sp.add_run(tailored_data.get("executive_summary", ""))
     r_sum.font.name = 'Calibri'
     r_sum.font.size = Pt(10)
@@ -448,7 +449,11 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
 
     page2_mode = tailored_data.get("page2_mode", "commercial")
     
-    if page2_mode == "logistics_market_access":
+    if page2_mode == "it_cto_digital":
+        h0 = tailored_data.get("exp_col_header_1", "Business Operator & Enterprise User")
+        h1 = tailored_data.get("exp_col_header_2", "Platform Architect & Founder CTO")
+        h2 = tailored_data.get("exp_col_header_3", "Enterprise Tech Advisory & CxO Sales")
+    elif page2_mode == "logistics_market_access":
         h0 = tailored_data.get("exp_col_header_1", "FMCG Operator & Demand Dynamics")
         h1 = tailored_data.get("exp_col_header_2", "Digital Aggregation & Logistics Optimization")
         h2 = tailored_data.get("exp_col_header_3", "Client Acquisition & Enterprise Advisory")
@@ -495,11 +500,44 @@ def populate_resume_document(doc, tailored_data, highlight_changes=False):
             r.bold = item.get("bold", False)
             r.italic = item.get("italic", False)
             r.font.name = 'Calibri'
-            r.font.size = Pt(item.get("size", 10))
+            r.font.size = Pt(10)
             if highlight_changes and item.get("highlight", False):
                 r.font.highlight_color = docx.enum.text.WD_COLOR_INDEX.YELLOW
 
-    if page2_mode == "logistics_market_access":
+    if page2_mode == "it_cto_digital":
+        c0_items = [
+            {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
+            {"text": "Regional Sales & Capability Head- India", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Frontline Business Operator: Owned $100M+ P&L across 6 GCC countries, experiencing end-user operational pain points firsthand.", "is_bullet": True, "size": 10},
+            {"text": "Directed 250+ distributor networks and 600+ reps, setting daily transaction, ERP reconciliation, and Order-to-Cash workflows.", "is_bullet": True, "size": 10},
+            {"text": "Spearheaded Britannia's 1st national SFA rollout (1,000+ users), ensuring real-world user adoption and data fidelity.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Airtel | Reliance | Tyco | 2001 – 2007", "bold": True, "size": 10, "space_before": 5},
+            {"text": "Commercial & Capability Roles", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Integrated Oracle CRM and enterprise billing systems across high-velocity telecom retail showrooms and distribution.", "is_bullet": True, "size": 10}
+        ]
+        c1_items = [
+            {"text": "Digital FMCG Platform", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Conektr Tech Global Ltd | UAE & India", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Founder & Platform CTO / CEO", "bold": True, "size": 10},
+            {"text": "May 2016 – Aug 2024", "size": 10, "space_after": 4},
+            {"text": "Architected end-to-end cloud platform serving 8,000+ B2B retailers (2,000+ MAU), managing full SDLC from Figma to production.", "is_bullet": True, "size": 10},
+            {"text": "Inside-Out IT Mastery: Built the technology and operated it daily as the primary commercial user for our own business.", "is_bullet": True, "size": 10},
+            {"text": "Engineered multi-tenant architecture, automated Dynamics 365 + Power BI integrations, and AI route optimization.", "is_bullet": True, "size": 10},
+            {"text": "Built conversational WhatsApp ordering bots and integrated payment rails (Stripe, CCAvenue, Tabby), scaling to ~AED 50M GMV.", "is_bullet": True, "size": 10},
+            {"text": "Raised $15M from VC and FMCG C-suite veterans; executed successful strategic M&A exit to Al Maya Group.", "is_bullet": True, "size": 10}
+        ]
+        c2_items = [
+            {"text": "TransCPG & FieldAssist | 2025 – Present", "bold": True, "size": 10, "space_before": 2},
+            {"text": "Board Advisor – Commercial Tech", "bold": True, "size": 10, "space_after": 3},
+            {"text": "Advising C-suites on enterprise digital architectures, regional Power BI data hubs, and microservices integration.", "is_bullet": True, "size": 10},
+            {"text": "Built Bid2Bill AI conversational voice-bot platform, lowering integration friction and cutting onboarding time by ~40%.", "is_bullet": True, "size": 10, "space_after": 3},
+            {"text": "Ivy Mobility Pte Ltd | 2011 – 2016", "bold": True, "size": 10, "space_before": 5},
+            {"text": "Business Head – MEA", "bold": True, "size": 10, "space_after": 4},
+            {"text": "Led enterprise solution sales to CxOs of tier-1 global brands (P&G, Nestlé, Coca-Cola, GSK/Haleon, Mars).", "is_bullet": True, "size": 10},
+            {"text": "Directed large-scale cloud SFA/DMS implementations across 5,000+ field users with >95% adoption rates.", "is_bullet": True, "size": 10}
+        ]
+    elif page2_mode == "logistics_market_access":
         c0_items = [
             {"text": "Britannia Industries Ltd | 2007 – 2011", "bold": True, "size": 10, "space_before": 2},
             {"text": "Regional Sales Head – GCC", "bold": True, "size": 10},
@@ -711,13 +749,17 @@ def create_master_resume_docx(tailored_data, highlight_changes=False):
 # 4. WORD COVER LETTER & 10PT MATCH MATRIX
 # ==============================================================================
 def populate_cover_letter_docx_page(doc, cover_data):
-    # Direct Opening: No 'COVER LETTER' or 'Subject:' header labels to maintain a natural, senior tone
+    # Direct Opening: Single 'Dear Hiring Team,' paragraph
     p_d = doc.add_paragraph("Dear Hiring Team,")
     apply_xml_spacing(p_d, before_pt=8, after_pt=10, line_twips=260)
     p_d.runs[0].bold = True
     p_d.runs[0].font.size = Pt(11)
 
-    p_p1 = doc.add_paragraph(cover_data.get("cover_para_1", ""))
+    # Sanitize cover_para_1 to ensure NO duplicate salutation generated by AI
+    p1_text = cover_data.get("cover_para_1", "").strip()
+    p1_cleaned = re.sub(r"^(?:dear\s+hiring\s+team\s*,\s*)+", "", p1_text, flags=re.IGNORECASE).strip()
+
+    p_p1 = doc.add_paragraph(p1_cleaned)
     apply_xml_spacing(p_p1, before_pt=0, after_pt=8, line_twips=270)
     p_p1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
@@ -920,14 +962,14 @@ with col1:
     job_desc = st.text_area(
         "Target Job Description (JD):",
         height=220,
-        placeholder="Paste target Job Description here (e.g., DP World Global Industry Lead, Clorox eCommerce, Mondelēz Sales Ops)...",
+        placeholder="Paste target Job Description here (e.g., IT & Digital Development Manager, DP World Lead, Clorox eCommerce)...",
     )
     st.markdown("##### Special Instructions & Context (Auto-Fed to Permanent Knowledge Base)")
-    st.caption("Any context given here or in feedback is automatically integrated into the persistent source code archive.")
+    st.caption("Any context entered here is permanently integrated into your custom knowledge base for all future resumes.")
     special_instructions = st.text_area(
         "Voice or Typed Notes:",
         height=90,
-        placeholder="e.g., Focus on DP World's potential to conquer FMCG logistics through Conektr's aggregation model...",
+        placeholder="e.g., Highlight my 3-sided IT advantage: Operator at Britannia/Airtel, Founder-CTO who built & used Conektr, and CxO Sales at FieldAssist/Ivy...",
     )
 
     col_btn1, col_btn2 = st.columns([1, 1])
@@ -990,38 +1032,48 @@ if generate_btn:
 
                 TARGET TRACK ROUTING & PAGE 2 COLUMN DYNAMICS:
                 - CRITICAL TRACK EVALUATION:
-                  1. IF Logistics, Market Access, Port Operations, 3PL, Supply Chain, or Aggregator mandate (e.g., DP World):
+                  1. IF IT, Software Architecture, Digital Product, CTO, Digital Development Manager, Tech Transformation (e.g., Arla IT Lead, CTO):
+                     - Set "page2_mode": "it_cto_digital"
+                     - Set "exp_col_header_1": "Business Operator & Enterprise User"
+                     - Set "exp_col_header_2": "Platform Architect & Founder CTO"
+                     - Set "exp_col_header_3": "Enterprise Tech Advisory & CxO Sales"
+                     - Set "capability_order": ["it_platform", "transformation", "commercial", "enterprise_sales", "entrepreneurship"]
+
+                  2. IF Logistics, Market Access, Port Operations, 3PL, Supply Chain, or Aggregator mandate (e.g., DP World):
                      - Set "page2_mode": "logistics_market_access"
                      - Set "exp_col_header_1": "FMCG Operator & Demand Dynamics"
                      - Set "exp_col_header_2": "Digital Aggregation & Logistics Optimization"
                      - Set "exp_col_header_3": "Client Acquisition & Enterprise Advisory"
                      - Set "capability_order": ["commercial", "logistics_aggregation", "enterprise_sales", "transformation", "entrepreneurship"]
 
-                  2. IF E-Commerce, Digital Shelf, Retail Media, Direct-to-Consumer, Quick Commerce (e.g., Clorox):
+                  3. IF E-Commerce, Digital Shelf, Retail Media, Direct-to-Consumer, Quick Commerce (e.g., Clorox):
                      - Set "page2_mode": "ecomm_b2c"
                      - Set "exp_col_header_1": "Omnichannel & Commercial Operations"
                      - Set "exp_col_header_2": "Digital B2B2C & Quick-Commerce"
                      - Set "exp_col_header_3": "Digital Shelf & Transformation"
                      - Set "capability_order": ["digital", "commercial", "transformation", "capability", "entrepreneurship"]
 
-                  3. IF Sales Capability, Training, Sales Ops, or RTM Excellence (e.g., Mondelēz):
+                  4. IF Sales Capability, Training, Sales Ops, or RTM Excellence (e.g., Mondelēz):
                      - Set "page2_mode": "capability"
                      - Set "exp_col_header_1": "Sales Operations"
                      - Set "exp_col_header_2": "Sales Capability - Traditional"
                      - Set "exp_col_header_3": "Sales Capability - Digital"
                      - Set "capability_order": ["capability", "commercial", "transformation", "digital", "entrepreneurship"]
 
-                  4. OTHERWISE (General Management / FMCG Leadership):
+                  5. OTHERWISE (General Management / FMCG Leadership):
                      - Set "page2_mode": "commercial"
                      - Set "exp_col_header_1": "Traditional FMCG Operator"
                      - Set "exp_col_header_2": "Digital FMCG Distribution"
                      - Set "exp_col_header_3": "Distribution Transformation"
 
                 COVER LETTER SPECIFICS:
-                - DO NOT include labels like 'COVER LETTER' or 'Subject:' line in the body.
-                - Start directly addressing: 'Dear Hiring Team,'.
+                - In "cover_para_1", DO NOT include any salutation like 'Dear Hiring Team,'. START DIRECTLY with the first sentence of your opening pitch (e.g., "As an executive technologist and commercial operator...").
+                - DO NOT include headers like 'COVER LETTER' or 'Subject:'.
                 - Paragraph 1: Catchy, authoritative opening tailored to the company, demonstrating how candidate's unique cross-domain mastery solves their exact challenge.
-                - Match narrative to the JD's core business problem.
+
+                EXECUTIVE SUMMARY (STRICT REQUIREMENT):
+                - MUST be strictly between 165 and 190 words.
+                - This word count guarantees it occupies AT LEAST 8 TO 9 FULL LINES in 10pt justified Calibri. Do NOT make it short.
 
                 MATCH MATRIX SPECIFICS:
                 - Heading MUST simply be "MATCH MATRIX".
@@ -1031,7 +1083,6 @@ if generate_btn:
 
                 STRICT EXECUTIVE WRITING RULES:
                 - Never spell out numbers into words (Always use: '360°', '$100M+', '23+ years', '8,000+', '~40%').
-                - Executive summary must be strictly between 145 and 175 words to occupy 7 to 9 lines in 10pt justified Calibri.
 
                 INPUT JOB DESCRIPTION:
                 {job_desc}
@@ -1043,11 +1094,11 @@ if generate_btn:
                 {{
                   "target_company": "string",
                   "target_role": "string",
-                  "page2_mode": "logistics_market_access",
+                  "page2_mode": "it_cto_digital",
                   "header_focus_1": "string",
                   "header_focus_2": "string",
                   "executive_summary": "string",
-                  "capability_order": ["commercial", "logistics_aggregation", "enterprise_sales", "transformation", "entrepreneurship"],
+                  "capability_order": ["it_platform", "transformation", "commercial", "enterprise_sales", "entrepreneurship"],
                   "exp_col_header_1": "string",
                   "exp_col_header_2": "string",
                   "exp_col_header_3": "string",
@@ -1094,7 +1145,7 @@ if generate_btn:
 
                     ordered_keys = parsed_json.get(
                         "capability_order",
-                        ["commercial", "logistics_aggregation", "enterprise_sales", "transformation", "entrepreneurship"],
+                        ["it_platform", "transformation", "commercial", "enterprise_sales", "entrepreneurship"],
                     )
                     full_capabilities = [BASE_CAPABILITIES[k] for k in ordered_keys if k in BASE_CAPABILITIES]
                     for k, cap_text in BASE_CAPABILITIES.items():
@@ -1167,7 +1218,7 @@ if st.session_state.get("has_results", False):
 
         st.markdown("---")
         st.subheader("✍️ Instant Revisions & Perpetual Feedback")
-        st.caption("Tweaks entered below update the current document and are saved permanently into your dynamic knowledge store.")
+        st.caption("Tweaks entered below update the current document and are saved permanently into your custom knowledge store.")
 
         correction_text = st.text_area("Enter corrections or adjustments:", height=85)
 
@@ -1175,7 +1226,6 @@ if st.session_state.get("has_results", False):
             if not correction_text.strip():
                 st.warning("Please type your feedback first.")
             else:
-                # Save incremental feedback permanently
                 save_custom_knowledge([{"q": f"Feedback for {target_co}", "a": correction_text.strip()}])
                 
                 with st.spinner("⚡ Applying targeted revisions and saving to master store..."):
@@ -1187,7 +1237,8 @@ if st.session_state.get("has_results", False):
                     {correction_text}
 
                     STRICT RULES:
-                    - Keep executive summary between 145 and 175 words (7-9 lines).
+                    - Keep executive summary strictly between 165 and 190 words (MUST be 8 to 9 lines in Calibri 10pt).
+                    - In "cover_para_1", DO NOT include "Dear Hiring Team,".
                     - In MATCH MATRIX, use 'Demonstrated Track Record & Proof Points'. Keep each row 28-36 words with quantitative metrics.
                     - Maintain all numeric conventions ('$100M+', '23+ years', '8,000+', '~40%').
                     Return ONLY valid JSON.
@@ -1208,7 +1259,7 @@ if st.session_state.get("has_results", False):
                         st.session_state["tailored_data"] = rev_json
                         st.session_state["cover_data"] = rev_json.get("cover_letter_data", {})
                         rebuild_all_documents()
-                        st.success("✅ Revisions applied and saved to knowledge archive!")
+                        st.success("✅ Revisions applied and permanently saved to knowledge base!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Failed to revise: {str(e)}")
